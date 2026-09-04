@@ -14,9 +14,10 @@ import {
   FileText,
   Calendar,
   Sparkles,
+  Users,
 } from 'lucide-react';
 import { Artist, ArtistLink, GalleryNote, CustomFieldDefinition } from '../types';
-import { getStoredGalleryNotes, saveGalleryNotes, getStoredArtistFields } from '../utils/storage';
+import { getStoredGalleryNotes, saveGalleryNotes, getStoredArtistFields, getStoredArtists } from '../utils/storage';
 import { GalleryNoteModal } from './GalleryNoteModal';
 
 interface ArtistFormModalProps {
@@ -24,6 +25,8 @@ interface ArtistFormModalProps {
   onClose: () => void;
   onSave: (artistData: Partial<Artist>) => void;
   initialArtist?: Artist | null;
+  allArtists?: Artist[];
+  onOpenFullNotePage?: (noteId: string) => void;
 }
 
 export const ArtistFormModal: React.FC<ArtistFormModalProps> = ({
@@ -31,6 +34,8 @@ export const ArtistFormModal: React.FC<ArtistFormModalProps> = ({
   onClose,
   onSave,
   initialArtist,
+  allArtists,
+  onOpenFullNotePage,
 }) => {
   const [name, setName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -49,6 +54,7 @@ export const ArtistFormModal: React.FC<ArtistFormModalProps> = ({
   const [customNumberFields, setCustomNumberFields] = useState<Record<string, number>>({});
 
   const [availableGalleryNotes, setAvailableGalleryNotes] = useState<GalleryNote[]>([]);
+  const [allArtistsList, setAllArtistsList] = useState<Artist[]>(allArtists || []);
   const [isCreatingDirectNote, setIsCreatingDirectNote] = useState(false);
 
   // New Feature: Note Preview modal state when clicking "Buka" in CATATAN GALERI TERTAUT
@@ -59,6 +65,11 @@ export const ArtistFormModal: React.FC<ArtistFormModalProps> = ({
     setAvailableGalleryNotes(getStoredGalleryNotes());
     const fields = getStoredArtistFields();
     setArtistFields(fields);
+    if (allArtists && allArtists.length > 0) {
+      setAllArtistsList(allArtists);
+    } else {
+      setAllArtistsList(getStoredArtists());
+    }
 
     if (initialArtist) {
       setName(initialArtist.name || '');
@@ -90,7 +101,24 @@ export const ArtistFormModal: React.FC<ArtistFormModalProps> = ({
     setFormError('');
     setPreviewingNote(null);
     setEditingNoteFromPreview(null);
-  }, [initialArtist, isOpen]);
+  }, [initialArtist, isOpen, allArtists]);
+
+  // Helper untuk mendapatkan nama-nama artis yang tertaut ke catatan galeri
+  const getLinkedArtistsForNote = (noteId: string, noteLinkedIds?: string[]): string[] => {
+    const linkedNames: string[] = [];
+    allArtistsList.forEach((a) => {
+      const isDirect = noteLinkedIds?.includes(a.id);
+      const isReverse = a.galleryNoteIds?.includes(noteId);
+      if (isDirect || isReverse) {
+        if (initialArtist && a.id === initialArtist.id) {
+          linkedNames.push(`${a.name} (Artis ini)`);
+        } else {
+          linkedNames.push(a.name);
+        }
+      }
+    });
+    return linkedNames;
+  };
 
   // Handle local image file upload -> Base64
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'avatar' | 'cover' | 'embed') => {
@@ -285,13 +313,14 @@ export const ArtistFormModal: React.FC<ArtistFormModalProps> = ({
                 Belum ada Catatan Galeri. Klik "+ Buat Baru" di atas untuk membuat.
               </p>
             ) : (
-              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
                 {availableGalleryNotes.map((note) => {
                   const isChecked = selectedGalleryNoteIds.includes(note.id);
+                  const linkedArtistNames = getLinkedArtistsForNote(note.id, note.linkedArtistIds);
                   return (
                     <div
                       key={note.id}
-                      className={`flex items-center justify-between p-2 rounded-md transition border ${
+                      className={`flex items-center justify-between p-2 rounded-md transition border gap-2 ${
                         isChecked
                           ? 'bg-[#212631] border-[#E5A93C]/60 text-[#F0F6FC]'
                           : 'bg-[#111319] border-[#30363D] text-[#8B949E] hover:text-[#F0F6FC]'
@@ -307,10 +336,10 @@ export const ArtistFormModal: React.FC<ArtistFormModalProps> = ({
                             setSelectedGalleryNoteIds([...selectedGalleryNoteIds, note.id]);
                           }
                         }}
-                        className="flex items-center gap-2 flex-1 min-w-0 text-left cursor-pointer"
+                        className="flex items-start gap-2.5 flex-1 min-w-0 text-left cursor-pointer"
                       >
                         <div
-                          className={`w-4 h-4 rounded flex items-center justify-center border transition shrink-0 ${
+                          className={`w-4 h-4 rounded flex items-center justify-center border transition shrink-0 mt-0.5 ${
                             isChecked
                               ? 'bg-[#E5A93C] border-[#E5A93C] text-[#0F1117]'
                               : 'border-[#30363D] bg-[#181B22]'
@@ -318,10 +347,30 @@ export const ArtistFormModal: React.FC<ArtistFormModalProps> = ({
                         >
                           {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                         </div>
-                        <span className="truncate text-xs font-medium">{note.title}</span>
-                        <span className="text-[10px] font-mono text-[#8B949E] shrink-0">
-                          ({note.blocks?.length || 0} blok)
-                        </span>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="truncate text-xs font-medium text-[#F0F6FC]">{note.title}</span>
+                            <span className="text-[10px] font-mono text-[#8B949E] shrink-0">
+                              ({note.blocks?.length || 0} blok)
+                            </span>
+                          </div>
+
+                          {/* Atribut Informasi Artis yang Tertaut */}
+                          <div className="flex items-center gap-1 flex-wrap mt-1">
+                            {linkedArtistNames.length > 0 ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-mono text-[#E5A93C] bg-[#181B22] px-1.5 py-0.5 rounded border border-[#30363D] max-w-full truncate">
+                                <Users className="w-2.5 h-2.5 shrink-0 text-[#E5A93C]" />
+                                <span className="truncate">Tertaut: {linkedArtistNames.join(', ')}</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-mono text-[#57606A] bg-[#0F1117] px-1.5 py-0.5 rounded border border-[#30363D]">
+                                <Users className="w-2.5 h-2.5 shrink-0 text-[#57606A]" />
+                                <span>Belum tertaut ke artis manapun</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </button>
 
                       {/* Tombol Buka Catatan untuk Preview */}
@@ -331,7 +380,7 @@ export const ArtistFormModal: React.FC<ArtistFormModalProps> = ({
                           e.stopPropagation();
                           setPreviewingNote(note);
                         }}
-                        className="px-2 py-0.5 rounded bg-[#181B22] hover:bg-[#2A303C] text-[#E5A93C] hover:text-[#F0B854] border border-[#30363D] hover:border-[#E5A93C]/60 text-[11px] font-mono flex items-center gap-1 shrink-0 ml-2 transition cursor-pointer active:scale-95 shadow-2xs"
+                        className="px-2 py-1 rounded bg-[#181B22] hover:bg-[#2A303C] text-[#E5A93C] hover:text-[#F0B854] border border-[#30363D] hover:border-[#E5A93C]/60 text-[11px] font-mono flex items-center gap-1 shrink-0 transition cursor-pointer active:scale-95 shadow-2xs self-start"
                         title="Buka pratinjau catatan galeri"
                       >
                         <span>Buka</span>
@@ -649,15 +698,35 @@ export const ArtistFormModal: React.FC<ArtistFormModalProps> = ({
 
               {/* Preview Body */}
               <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#111319]/40">
-                <div className="border-b border-[#30363D] pb-3 space-y-1">
-                  <div className="text-[10px] font-mono text-[#8B949E] flex items-center gap-2">
-                    <span className="text-[#E5A93C] uppercase">ARCHIVE PREVIEW</span>
+                <div className="border-b border-[#30363D] pb-3 space-y-1.5">
+                  <div className="text-[10px] font-mono text-[#8B949E] flex items-center gap-2 flex-wrap">
+                    <span className="text-[#E5A93C] uppercase font-bold">ARCHIVE PREVIEW</span>
                     <span>•</span>
                     <span>Diperbarui: {new Date(previewingNote.updatedAt).toLocaleDateString('id-ID')}</span>
                   </div>
                   <h2 className="text-base font-semibold text-[#F0F6FC]">
                     {previewingNote.title}
                   </h2>
+
+                  {/* Informasi Artis yang Tertaut di Pratinjau */}
+                  {(() => {
+                    const linkedInPreview = getLinkedArtistsForNote(previewingNote.id, previewingNote.linkedArtistIds);
+                    return (
+                      <div className="pt-1">
+                        {linkedInPreview.length > 0 ? (
+                          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#212631] text-[#E5A93C] text-[10px] font-mono border border-[#30363D]">
+                            <Users className="w-3 h-3 text-[#E5A93C]" />
+                            <span>Artis Tertaut: {linkedInPreview.join(', ')}</span>
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#111319] text-[#57606A] text-[10px] font-mono border border-[#30363D]">
+                            <Users className="w-3 h-3 text-[#57606A]" />
+                            <span>Belum tertaut ke artis manapun</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Rendered Blocks Preview */}
@@ -711,8 +780,8 @@ export const ArtistFormModal: React.FC<ArtistFormModalProps> = ({
                 </div>
               </div>
 
-              {/* Preview Footer Actions with Option: "Buka Catatan" */}
-              <div className="px-4 py-2.5 border-t border-[#30363D] bg-[#111319] shrink-0 flex items-center justify-between gap-2">
+              {/* Preview Footer Actions with Options: "Buka Halaman Penuh" & "Buka Catatan" */}
+              <div className="px-4 py-2.5 border-t border-[#30363D] bg-[#111319] shrink-0 flex items-center justify-between gap-2 flex-wrap">
                 <button
                   type="button"
                   onClick={() => setPreviewingNote(null)}
@@ -721,19 +790,41 @@ export const ArtistFormModal: React.FC<ArtistFormModalProps> = ({
                   Tutup Pratinjau
                 </button>
 
-                {/* TOMBOL OPSI UNTUK BUKA CATATAN */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const noteToOpen = previewingNote;
-                    setPreviewingNote(null);
-                    setEditingNoteFromPreview(noteToOpen);
-                  }}
-                  className="px-3.5 py-1.5 rounded-md bg-[#E5A93C] hover:bg-[#F0B854] text-[#0F1117] font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer active:scale-98 shadow-sm"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>Buka Catatan</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* TOMBOL BUKA HALAMAN PENUH */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const noteId = previewingNote.id;
+                      setPreviewingNote(null);
+                      if (onOpenFullNotePage) {
+                        onOpenFullNotePage(noteId);
+                      } else {
+                        onClose();
+                        window.location.hash = `#/gallery_note/${noteId}`;
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-md bg-[#212631] hover:bg-[#2A303C] text-[#E5A93C] hover:text-[#F0B854] border border-[#30363D] font-mono font-medium text-xs flex items-center gap-1.5 transition cursor-pointer active:scale-98"
+                    title="Buka halaman catatan ini secara penuh"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Buka Halaman Penuh</span>
+                  </button>
+
+                  {/* TOMBOL OPSI UNTUK BUKA CATATAN / EDITOR */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const noteToOpen = previewingNote;
+                      setPreviewingNote(null);
+                      setEditingNoteFromPreview(noteToOpen);
+                    }}
+                    className="px-3.5 py-1.5 rounded-md bg-[#E5A93C] hover:bg-[#F0B854] text-[#0F1117] font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer active:scale-98 shadow-sm"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Buka Catatan</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -752,7 +843,7 @@ export const ArtistFormModal: React.FC<ArtistFormModalProps> = ({
               setEditingNoteFromPreview(null);
             }}
             initialNote={editingNoteFromPreview}
-            artists={[]}
+            artists={allArtistsList}
             readOnlyInitial={false}
           />
         )}
@@ -771,7 +862,7 @@ export const ArtistFormModal: React.FC<ArtistFormModalProps> = ({
               setIsCreatingDirectNote(false);
             }}
             initialNote={null}
-            artists={[]}
+            artists={allArtistsList}
           />
         )}
       </div>

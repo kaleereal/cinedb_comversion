@@ -241,9 +241,12 @@ export default function App() {
           'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
         coverUrl: artistData.coverUrl,
         bio: artistData.bio,
+        birthMonthYear: artistData.birthMonthYear,
+        galleryNoteIds: artistData.galleryNoteIds || [],
         links: artistData.links || [],
         embedImages: artistData.embedImages || [],
         textFields: artistData.textFields || {},
+        numberFields: artistData.numberFields || {},
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -559,6 +562,13 @@ export default function App() {
           onClose={() => setIsArtistModalOpen(false)}
           onSave={handleSaveArtist}
           initialArtist={editingArtist}
+          allArtists={artists}
+          onOpenFullNotePage={(noteId) => {
+            setIsArtistModalOpen(false);
+            setSelectedGalleryNoteId(noteId);
+            setActiveTab('gallery_notes');
+            window.location.hash = `#/gallery_note/${noteId}`;
+          }}
         />
 
         {/* Floating Toast Notification */}

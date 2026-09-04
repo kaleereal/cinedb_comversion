@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, UserPlus, Film, Trash2, Users, LayoutGrid, List } from 'lucide-react';
+import { Search, UserPlus, Film, Trash2, Users, LayoutGrid, List, FileText } from 'lucide-react';
 import { Artist, Video } from '../types';
 import { RatingBadge } from './RatingBadge';
-import { calculateArtistAggregatedRating, getArtistViewMode, saveArtistViewMode } from '../utils/storage';
+import { calculateArtistAggregatedRating, getArtistViewMode, saveArtistViewMode, getStoredGalleryNotes } from '../utils/storage';
 
 interface ArtistListViewProps {
   artists: Artist[];
@@ -34,6 +34,22 @@ export const ArtistListView: React.FC<ArtistListViewProps> = ({
     setViewMode(mode);
     saveArtistViewMode(mode);
   };
+
+  // Hitung total catatan galeri yang tertaut ke masing-masing artis
+  const galleryNotes = useMemo(() => getStoredGalleryNotes(), []);
+  const artistNoteCountMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    artists.forEach((artist) => {
+      const noteSet = new Set<string>(artist.galleryNoteIds || []);
+      galleryNotes.forEach((note) => {
+        if (note.linkedArtistIds && note.linkedArtistIds.includes(artist.id)) {
+          noteSet.add(note.id);
+        }
+      });
+      map[artist.id] = noteSet.size;
+    });
+    return map;
+  }, [artists, galleryNotes]);
 
   const filteredArtists = useMemo(() => {
     return artists.filter((artist) => {
@@ -181,10 +197,19 @@ export const ArtistListView: React.FC<ArtistListViewProps> = ({
                     <RatingBadge score={rating} size="sm" showIcon />
                   </div>
 
-                  {/* Video Count Tag */}
-                  <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.2 rounded bg-[#111319]/80 backdrop-blur-xs text-[9px] font-mono text-[#E5A93C] border border-[#30363D]">
-                    <Film className="w-2.5 h-2.5" />
-                    <span>{videoCount} vid</span>
+                  {/* Video & Notes Count Tags */}
+                  <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between pointer-events-none">
+                    <div className="flex items-center gap-1 px-1.5 py-0.2 rounded bg-[#111319]/85 backdrop-blur-xs text-[9px] font-mono text-[#E5A93C] border border-[#30363D]">
+                      <Film className="w-2.5 h-2.5" />
+                      <span>{videoCount} vid</span>
+                    </div>
+                    <div
+                      className="flex items-center gap-1 px-1.5 py-0.2 rounded bg-[#111319]/85 backdrop-blur-xs text-[9px] font-mono text-[#F0F6FC] border border-[#30363D]"
+                      title="Total Catatan Galeri Tertaut"
+                    >
+                      <FileText className="w-2.5 h-2.5 text-[#E5A93C]" />
+                      <span>{artistNoteCountMap[artist.id] || 0} note</span>
+                    </div>
                   </div>
                 </div>
 
@@ -207,6 +232,7 @@ export const ArtistListView: React.FC<ArtistListViewProps> = ({
         <div className="space-y-1.5">
           {filteredArtists.map((artist) => {
             const { rating, videoCount } = calculateArtistAggregatedRating(artist.id, videos);
+            const noteCount = artistNoteCountMap[artist.id] || 0;
 
             return (
               <div
@@ -231,9 +257,16 @@ export const ArtistListView: React.FC<ArtistListViewProps> = ({
                   <p className="text-[10px] font-mono text-[#8B949E] truncate">
                     {artist.textFields?.['Peran Utama'] || artist.bio || 'Profil Artis'}
                   </p>
-                  <div className="flex items-center gap-1 text-[9px] font-mono text-[#E5A93C]">
-                    <Film className="w-2.5 h-2.5" />
-                    <span>{videoCount} video</span>
+                  <div className="flex items-center gap-2 text-[9px] font-mono text-[#8B949E] mt-0.5">
+                    <div className="flex items-center gap-1 text-[#E5A93C]">
+                      <Film className="w-2.5 h-2.5" />
+                      <span>{videoCount} video</span>
+                    </div>
+                    <span className="text-[#57606A]">•</span>
+                    <div className="flex items-center gap-1 text-[#F0F6FC]" title="Total Catatan Galeri Tertaut">
+                      <FileText className="w-2.5 h-2.5 text-[#E5A93C]" />
+                      <span>{noteCount} catatan</span>
+                    </div>
                   </div>
                 </div>
 

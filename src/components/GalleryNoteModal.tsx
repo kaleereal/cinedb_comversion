@@ -22,6 +22,7 @@ import {
   Sparkles,
   Link,
   Search,
+  ExternalLink,
 } from 'lucide-react';
 import { GalleryNote, NoteBlock, Artist } from '../types';
 
@@ -32,6 +33,7 @@ interface GalleryNoteModalProps {
   initialNote?: GalleryNote | null;
   artists: Artist[];
   readOnlyInitial?: boolean;
+  onOpenFullNotePage?: (noteId: string) => void;
 }
 
 export const GalleryNoteModal: React.FC<GalleryNoteModalProps> = ({
@@ -41,6 +43,7 @@ export const GalleryNoteModal: React.FC<GalleryNoteModalProps> = ({
   initialNote,
   artists,
   readOnlyInitial = false,
+  onOpenFullNotePage,
 }) => {
   const [isReadOnly, setIsReadOnly] = useState(readOnlyInitial);
   const [title, setTitle] = useState(initialNote?.title || 'Catatan Baru');
@@ -65,7 +68,12 @@ export const GalleryNoteModal: React.FC<GalleryNoteModalProps> = ({
       if (initialNote) {
         setTitle(initialNote.title || '');
         setBlocks(initialNote.blocks ? JSON.parse(JSON.stringify(initialNote.blocks)) : []);
-        setSelectedArtistIds(initialNote.linkedArtistIds ? [...initialNote.linkedArtistIds] : []);
+        const linkedFromNote = initialNote.linkedArtistIds || [];
+        const linkedFromArtists = (artists || [])
+          .filter((a) => a.galleryNoteIds?.includes(initialNote.id))
+          .map((a) => a.id);
+        const mergedLinked = Array.from(new Set([...linkedFromNote, ...linkedFromArtists]));
+        setSelectedArtistIds(mergedLinked);
       } else {
         setTitle('Catatan Baru');
         setBlocks([
@@ -84,7 +92,7 @@ export const GalleryNoteModal: React.FC<GalleryNoteModalProps> = ({
         }, 100);
       }
     }
-  }, [initialNote, isOpen, readOnlyInitial]);
+  }, [initialNote, isOpen, readOnlyInitial, artists]);
 
   // Keyboard shortcut: Cmd/Ctrl + S to save, Esc to close
   useEffect(() => {
@@ -229,6 +237,27 @@ export const GalleryNoteModal: React.FC<GalleryNoteModalProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
+            {/* Button to open full note page if note exists */}
+            {initialNote?.id && (
+              <button
+                type="button"
+                onClick={() => {
+                  const noteId = initialNote.id;
+                  onClose();
+                  if (onOpenFullNotePage) {
+                    onOpenFullNotePage(noteId);
+                  } else {
+                    window.location.hash = `#/gallery_note/${noteId}`;
+                  }
+                }}
+                className="px-2 py-1 rounded text-xs font-mono flex items-center gap-1 transition cursor-pointer border bg-[#212631] text-[#E5A93C] border-[#30363D] hover:border-[#E5A93C]/50 hover:bg-[#2A303C]"
+                title="Buka catatan ini secara penuh di halaman Catatan Galeri"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>Buka Catatan</span>
+              </button>
+            )}
+
             {/* Mode Switcher: Edit vs Preview */}
             <button
               type="button"
@@ -276,17 +305,32 @@ export const GalleryNoteModal: React.FC<GalleryNoteModalProps> = ({
                 {title || 'Tanpa Judul'}
               </h1>
 
-              {linkedArtists.length > 0 && (
+              {linkedArtists.length > 0 ? (
                 <div className="flex items-center flex-wrap gap-1 pt-1.5">
-                  <span className="text-[10px] font-mono text-[#8B949E]">Artis:</span>
+                  <span className="text-[10px] font-mono text-[#8B949E] flex items-center gap-1">
+                    <Users className="w-3 h-3 text-[#E5A93C]" />
+                    Artis Tertaut:
+                  </span>
                   {linkedArtists.map((a) => (
                     <span
                       key={a.id}
-                      className="px-1.5 py-0.5 rounded bg-[#212631] border border-[#30363D] text-[11px] text-[#F0F6FC]"
+                      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#212631] border border-[#30363D] text-[11px] text-[#F0F6FC]"
                     >
-                      {a.name}
+                      <img
+                        src={a.avatarUrl}
+                        alt=""
+                        className="w-3.5 h-3.5 rounded-full object-cover border border-[#30363D]"
+                      />
+                      <span>{a.name}</span>
                     </span>
                   ))}
+                </div>
+              ) : (
+                <div className="pt-1.5">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-mono text-[#57606A] bg-[#111319] px-2 py-0.5 rounded border border-[#30363D]">
+                    <Users className="w-2.5 h-2.5 text-[#57606A]" />
+                    <span>Belum tertaut ke artis manapun</span>
+                  </span>
                 </div>
               )}
             </div>
@@ -600,9 +644,15 @@ export const GalleryNoteModal: React.FC<GalleryNoteModalProps> = ({
                 <div className="flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 text-[#E5A93C]" />
                   <span className="text-xs font-semibold text-[#F0F6FC]">Tautkan Artis</span>
-                  <span className="text-[10px] font-mono text-[#8B949E]">
-                    ({selectedArtistIds.length} terpilih)
-                  </span>
+                  {selectedArtistIds.length > 0 ? (
+                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#212631] border border-[#E5A93C]/40 text-[#E5A93C]">
+                      {selectedArtistIds.length} Tertaut
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#111319] border border-[#30363D] text-[#57606A]">
+                      Belum Tertaut
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-1 text-[11px] font-mono text-[#8B949E]">
                   <span>{showArtistSelector ? 'Sembunyikan' : 'Kelola'}</span>
@@ -611,26 +661,44 @@ export const GalleryNoteModal: React.FC<GalleryNoteModalProps> = ({
               </div>
 
               {/* Selected Artists Pills Summary */}
-              {selectedArtistIds.length > 0 && (
-                <div className="flex flex-wrap gap-1 pt-0.5">
-                  {linkedArtists.map((art) => (
-                    <span
-                      key={art.id}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#212631] border border-[#E5A93C]/50 text-[11px] font-medium text-[#E5A93C]"
-                    >
-                      <span>{art.name}</span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleArtistLink(art.id);
-                        }}
-                        className="hover:text-rose-400"
+              {selectedArtistIds.length > 0 ? (
+                <div className="space-y-1">
+                  <div className="text-[10px] font-mono text-[#8B949E]">
+                    Artis yang sudah tertaut ke catatan ini:
+                  </div>
+                  <div className="flex flex-wrap gap-1 pt-0.5">
+                    {linkedArtists.map((art) => (
+                      <span
+                        key={art.id}
+                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#212631] border border-[#E5A93C]/50 text-[11px] font-medium text-[#E5A93C]"
                       >
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    </span>
-                  ))}
+                        <img
+                          src={art.avatarUrl}
+                          alt=""
+                          className="w-3.5 h-3.5 rounded-full object-cover border border-[#30363D]"
+                        />
+                        <span>{art.name}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleArtistLink(art.id);
+                          }}
+                          className="hover:text-rose-400 cursor-pointer ml-0.5"
+                          title="Hapus tautan artis"
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-1.5 rounded bg-[#111319] border border-[#30363D]">
+                  <p className="text-[10px] font-mono text-[#57606A] flex items-center gap-1.5">
+                    <Users className="w-3 h-3 text-[#57606A]" />
+                    <span>Catatan ini belum tertaut ke artis manapun. Klik <strong>Kelola</strong> untuk menautkan.</span>
+                  </p>
                 </div>
               )}
 
@@ -648,7 +716,7 @@ export const GalleryNoteModal: React.FC<GalleryNoteModalProps> = ({
                     />
                   </div>
 
-                  <div className="max-h-32 overflow-y-auto space-y-1 pr-1">
+                  <div className="max-h-40 overflow-y-auto space-y-1 pr-1">
                     {filteredAvailableArtists.length === 0 ? (
                       <p className="text-[10px] font-mono text-[#57606A] p-2 text-center">
                         Artis tidak ditemukan
@@ -660,14 +728,38 @@ export const GalleryNoteModal: React.FC<GalleryNoteModalProps> = ({
                           <div
                             key={art.id}
                             onClick={() => toggleArtistLink(art.id)}
-                            className={`px-2 py-1 rounded text-xs flex items-center justify-between cursor-pointer transition ${
+                            className={`px-2.5 py-1.5 rounded text-xs flex items-center justify-between cursor-pointer transition border ${
                               isSelected
-                                ? 'bg-[#E5A93C]/15 text-[#E5A93C] border border-[#E5A93C]/40'
-                                : 'bg-[#111319] text-[#8B949E] hover:text-[#F0F6FC] hover:bg-[#212631]'
+                                ? 'bg-[#212631] text-[#E5A93C] border-[#E5A93C]/50'
+                                : 'bg-[#111319] text-[#8B949E] hover:text-[#F0F6FC] hover:bg-[#212631] border-[#30363D]'
                             }`}
                           >
-                            <span>{art.name}</span>
-                            {isSelected && <Check className="w-3 h-3 text-[#E5A93C]" />}
+                            <div className="flex items-center gap-2 min-w-0">
+                              <img
+                                src={art.avatarUrl}
+                                alt={art.name}
+                                className="w-5 h-5 rounded-full object-cover border border-[#30363D] shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <span className="font-medium text-[#F0F6FC] truncate block text-[11px]">{art.name}</span>
+                                <span className="text-[9px] font-mono text-[#8B949E] truncate block">
+                                  {art.textFields?.['Peran Utama'] || 'Artis'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span
+                                className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
+                                  isSelected
+                                    ? 'bg-[#E5A93C]/20 text-[#E5A93C] border border-[#E5A93C]/40'
+                                    : 'text-[#57606A] bg-[#0F1117] border border-[#30363D]'
+                                }`}
+                              >
+                                {isSelected ? 'Tertaut' : 'Belum'}
+                              </span>
+                              {isSelected && <Check className="w-3 h-3 text-[#E5A93C] stroke-[2.5]" />}
+                            </div>
                           </div>
                         );
                       })
@@ -686,6 +778,25 @@ export const GalleryNoteModal: React.FC<GalleryNoteModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            {isReadOnly && initialNote?.id && (
+              <button
+                type="button"
+                onClick={() => {
+                  const noteId = initialNote.id;
+                  onClose();
+                  if (onOpenFullNotePage) {
+                    onOpenFullNotePage(noteId);
+                  } else {
+                    window.location.hash = `#/gallery_note/${noteId}`;
+                  }
+                }}
+                className="px-3.5 py-1.5 rounded-md bg-[#E5A93C] hover:bg-[#F0B854] text-[#0F1117] font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer active:scale-98 shadow-sm"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Buka Catatan</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={onClose}

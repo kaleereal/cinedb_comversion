@@ -25,6 +25,7 @@ import {
   getStoredGalleryNotes,
   saveGalleryNotes,
   getStoredArtists,
+  saveArtists,
 } from '../utils/storage';
 import { GalleryNoteModal } from './GalleryNoteModal';
 
@@ -95,6 +96,35 @@ export const GalleryNotesView: React.FC<GalleryNotesViewProps> = ({
     }
     setNotes(updated);
     saveGalleryNotes(updated);
+
+    // Keep stored artists' galleryNoteIds bidirectionally in sync
+    const allStoredArtists = getStoredArtists();
+    let artistsChanged = false;
+    const syncedArtists = allStoredArtists.map((artist) => {
+      const isLinkedToNote = savedNote.linkedArtistIds?.includes(artist.id);
+      const currentNotes = artist.galleryNoteIds || [];
+      const hasNoteId = currentNotes.includes(savedNote.id);
+
+      if (isLinkedToNote && !hasNoteId) {
+        artistsChanged = true;
+        return {
+          ...artist,
+          galleryNoteIds: [...currentNotes, savedNote.id],
+        };
+      } else if (!isLinkedToNote && hasNoteId) {
+        artistsChanged = true;
+        return {
+          ...artist,
+          galleryNoteIds: currentNotes.filter((nid) => nid !== savedNote.id),
+        };
+      }
+      return artist;
+    });
+
+    if (artistsChanged) {
+      saveArtists(syncedArtists);
+    }
+
     showToast('Catatan berhasil disimpan');
   };
 
@@ -104,6 +134,24 @@ export const GalleryNotesView: React.FC<GalleryNotesViewProps> = ({
     const updated = notes.filter((n) => n.id !== noteId);
     setNotes(updated);
     saveGalleryNotes(updated);
+
+    // Also remove noteId from all artists
+    const allStoredArtists = getStoredArtists();
+    let artistsChanged = false;
+    const syncedArtists = allStoredArtists.map((artist) => {
+      if (artist.galleryNoteIds?.includes(noteId)) {
+        artistsChanged = true;
+        return {
+          ...artist,
+          galleryNoteIds: artist.galleryNoteIds.filter((nid) => nid !== noteId),
+        };
+      }
+      return artist;
+    });
+    if (artistsChanged) {
+      saveArtists(syncedArtists);
+    }
+
     showToast('Catatan dihapus');
   };
 

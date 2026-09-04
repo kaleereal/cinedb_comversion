@@ -1167,6 +1167,10 @@ export const ArtistDetailView: React.FC<ArtistDetailViewProps> = ({
           initialNote={readingNote}
           artists={effectiveArtists}
           readOnlyInitial={true}
+          onOpenFullNotePage={(noteId) => {
+            setReadingNote(null);
+            window.location.hash = `#/gallery_note/${noteId}`;
+          }}
         />
       )}
 

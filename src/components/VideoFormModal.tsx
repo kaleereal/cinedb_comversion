@@ -331,41 +331,40 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
   return (
     <div
       id="video-form-modal"
-      className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center bg-black/80 backdrop-blur-sm animate-in fade-in"
+      className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center bg-black/85 backdrop-blur-xs animate-in fade-in p-0 sm:p-4"
     >
-      <div className="relative w-full max-w-lg mx-auto bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
-        {/* Sticky Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md shrink-0">
-          <div>
-            <h2 className="text-lg font-bold text-white tracking-tight">
-              {initialVideo ? 'Ubah Entri Video' : 'Tambah Video Baru'}
+      <div className="relative w-full max-w-xl mx-auto bg-[#181B22] border border-[#30363D] rounded-t-xl sm:rounded-xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] overflow-hidden">
+        {/* Compact Modal Header */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#30363D] bg-[#111319] shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#E5A93C]" />
+            <h2 className="text-xs font-semibold text-[#F0F6FC]">
+              {initialVideo ? 'Ubah Entri Video' : 'Tambah Entri Video'}
             </h2>
-            <p className="text-xs text-slate-400">
-              Isi parameter rating, tautan artis, dan metadata video
-            </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            className="p-1 rounded text-[#8B949E] hover:text-[#F0F6FC] hover:bg-[#212631] transition cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Scrollable Single-Column Body with min 16px spacing */}
+        {/* Scrollable Compact Form Body */}
         <form
           onSubmit={handleSubmit}
-          className="flex-1 overflow-y-auto p-5 space-y-6 pb-28"
+          className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-[#111319]/20"
         >
-          {/* Real-time Overall Rating Floating Summary Card */}
-          <div className="sticky top-0 z-20 -mx-5 -mt-5 px-5 py-3.5 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-sm flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <RatingBadge score={overallRating} size="lg" showIcon />
+          {/* Real-time Overall Rating Sticky Compact Bar */}
+          <div className="sticky top-0 z-20 -mx-4 -mt-4 px-4 py-2.5 bg-[#111319]/95 backdrop-blur-xs border-b border-[#30363D] flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <RatingBadge score={overallRating} size="md" showIcon />
               <div>
-                <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                <div className="text-[9px] font-mono uppercase tracking-wider text-[#8B949E]">
                   Kalkulasi Skor Real-Time
                 </div>
-                <div className="text-sm font-bold text-white">
+                <div className="text-xs font-semibold text-[#F0F6FC]">
                   {overallRating >= 80
                     ? 'Sangat Direkomendasikan'
                     : overallRating >= 50
@@ -378,19 +377,21 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
             </div>
 
             {/* Live Progress Bar */}
-            <div className="w-32 hidden sm:block">
-              <div className="flex justify-between text-[10px] font-bold text-slate-400 mb-1">
+            <div className="w-28 hidden sm:block">
+              <div className="flex justify-between text-[9px] font-mono text-[#8B949E] mb-1">
                 <span>Skor</span>
-                <span>{overallRating}/100</span>
+                <span className="text-[#E5A93C] font-semibold">{overallRating}/100</span>
               </div>
-              <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-[#212631] rounded-full overflow-hidden border border-[#30363D]">
                 <div
                   className={`h-full transition-all duration-300 ${
                     overallRating >= 80
-                      ? 'bg-emerald-500'
+                      ? 'bg-emerald-400'
                       : overallRating >= 50
-                      ? 'bg-amber-500'
-                      : 'bg-rose-500'
+                      ? 'bg-[#E5A93C]'
+                      : overallRating > 0
+                      ? 'bg-rose-400'
+                      : 'bg-transparent'
                   }`}
                   style={{ width: `${overallRating}%` }}
                 />
@@ -403,17 +404,17 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
             // 1. LINK FIELD
             if (field.type === 'link') {
               return (
-                <div key={field.id} className="space-y-2">
+                <div key={field.id} className="space-y-1.5 p-3 rounded-md bg-[#181B22] border border-[#30363D]">
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-bold text-slate-200 flex items-center gap-2">
-                      <LinkIcon className="w-4 h-4 text-indigo-400" />
+                    <label className="text-[10px] font-mono uppercase tracking-wider text-[#8B949E] flex items-center gap-1.5">
+                      <LinkIcon className="w-3.5 h-3.5 text-[#E5A93C]" />
                       <span>{field.label}</span>
                       {field.required && <span className="text-rose-400">*</span>}
                     </label>
                   </div>
-                  <p className="text-xs text-slate-400">{field.description}</p>
+                  {field.description && <p className="text-[10px] font-mono text-[#57606A]">{field.description}</p>}
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5">
                     <input
                       type="url"
                       value={url}
@@ -422,37 +423,37 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                         if (url && !metadata) handleFetchMetadata();
                       }}
                       placeholder="https://www.youtube.com/watch?v=..."
-                      className="flex-1 min-h-[48px] px-3.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="flex-1 min-h-[36px] px-3 rounded-md bg-[#111319] border border-[#30363D] text-[#F0F6FC] text-xs placeholder:text-[#57606A] focus:outline-none focus:border-[#E5A93C] transition"
                     />
                     <button
                       type="button"
                       onClick={() => handleFetchMetadata()}
                       disabled={isFetchingMeta || !url}
-                      className="min-h-[48px] px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 transition active:scale-95 shrink-0"
+                      className="min-h-[36px] px-3 rounded-md bg-[#212631] hover:bg-[#2A303C] disabled:opacity-50 text-[#F0F6FC] border border-[#30363D] hover:border-[#E5A93C] text-xs font-mono flex items-center gap-1.5 transition active:scale-95 shrink-0 cursor-pointer"
                     >
-                      <Sparkles className={`w-3.5 h-3.5 ${isFetchingMeta ? 'animate-spin' : ''}`} />
+                      <Sparkles className={`w-3.5 h-3.5 text-[#E5A93C] ${isFetchingMeta ? 'animate-spin' : ''}`} />
                       <span>{isFetchingMeta ? 'Fetching...' : 'Fetch'}</span>
                     </button>
                   </div>
 
                   {fetchError && (
-                    <p className="text-xs text-rose-400 bg-rose-950/40 p-2.5 rounded-xl border border-rose-800/50">
+                    <p className="text-[11px] font-mono text-rose-300 bg-rose-950/50 p-2 rounded-md border border-rose-800">
                       {fetchError}
                     </p>
                   )}
 
                   {/* Preview Embed / Thumbnail */}
                   {metadata && (
-                    <div className="mt-3 p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 animate-in fade-in">
-                      <div className="text-[11px] font-semibold text-indigo-400 flex items-center justify-between">
-                        <span>Preview Metadata Berhasil Diambil</span>
+                    <div className="mt-2 p-2.5 rounded-md bg-[#111319] border border-[#30363D] space-y-2 animate-in fade-in">
+                      <div className="text-[10px] font-mono text-[#E5A93C] flex items-center justify-between">
+                        <span>Metadata Terambil</span>
                         {metadata.domain && (
-                          <span className="text-slate-400">{metadata.domain}</span>
+                          <span className="text-[#8B949E]">{metadata.domain}</span>
                         )}
                       </div>
 
                       {metadata.embedUrl ? (
-                        <div className="aspect-video w-full rounded-xl overflow-hidden bg-slate-900 border border-slate-800">
+                        <div className="aspect-video w-full rounded-md overflow-hidden bg-[#0F1117] border border-[#30363D]">
                           <iframe
                             src={metadata.embedUrl}
                             title="Preview Embed"
@@ -461,7 +462,7 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                           />
                         </div>
                       ) : metadata.thumbnailUrl ? (
-                        <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-slate-900">
+                        <div className="relative aspect-video w-full rounded-md overflow-hidden bg-[#0F1117] border border-[#30363D]">
                           <img
                             src={metadata.thumbnailUrl}
                             alt="Preview Thumbnail"
@@ -471,15 +472,15 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                         </div>
                       ) : null}
 
-                      <div className="flex items-center justify-between pt-1">
-                        <span className="text-xs text-slate-300 font-medium truncate max-w-[200px]">
+                      <div className="flex items-center justify-between pt-0.5">
+                        <span className="text-xs text-[#F0F6FC] font-medium truncate max-w-[240px]">
                           {metadata.title || 'Video Embed Siap'}
                         </span>
                         <a
                           href={url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-indigo-400 font-semibold hover:underline flex items-center gap-1"
+                          className="text-[11px] font-mono text-[#E5A93C] hover:underline flex items-center gap-1"
                         >
                           <ExternalLink className="w-3 h-3" />
                           <span>Buka Link</span>
@@ -494,51 +495,53 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
             // 2. TITLE FIELD & RELEASE DATE
             if (field.type === 'text' && field.key === 'title') {
               return (
-                <div key={field.id} className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-200 flex items-center gap-1.5">
+                <div key={field.id} className="space-y-3 p-3 rounded-md bg-[#181B22] border border-[#30363D]">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono uppercase tracking-wider text-[#8B949E] flex items-center gap-1">
                       <span>{field.label}</span>
                       {field.required && <span className="text-rose-400">*</span>}
                     </label>
-                    <p className="text-xs text-slate-400">{field.description}</p>
+                    {field.description && <p className="text-[10px] font-mono text-[#57606A]">{field.description}</p>}
                     <input
                       type="text"
                       required
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder="Contoh: Oppenheimer Official Trailer (4K)"
-                      className="w-full min-h-[48px] px-3.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full min-h-[36px] px-3 rounded-md bg-[#111319] border border-[#30363D] text-[#F0F6FC] text-xs font-semibold focus:outline-none focus:border-[#E5A93C] placeholder:text-[#57606A] transition"
                     />
                   </div>
 
                   {/* Mandatory Tanggal Rilis Field */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-200 flex items-center gap-1.5">
-                      <span>Tanggal Rilis Video</span>
-                      <span className="text-rose-400">*</span>
-                    </label>
-                    <p className="text-xs text-slate-400">Tanggal penayangan atau rilis resmi video ini.</p>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-mono uppercase tracking-wider text-[#8B949E] flex items-center gap-1">
+                        <span>Tanggal Rilis Video</span>
+                        <span className="text-rose-400">*</span>
+                      </label>
+                      <span className="text-[10px] font-mono text-[#E5A93C]">Wajib</span>
+                    </div>
                     <input
                       type="date"
                       required
                       value={releaseDate}
                       onChange={(e) => setReleaseDate(e.target.value)}
-                      className="w-full min-h-[48px] px-3.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full min-h-[36px] px-3 rounded-md bg-[#111319] border border-[#30363D] text-[#F0F6FC] text-xs focus:outline-none focus:border-[#E5A93C] transition"
                     />
                   </div>
 
-                  {/* Fallback Manual Thumbnail Field (Poin 5) */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-200 flex items-center gap-1.5">
-                      <span>URL Thumbnail Fallback (Manual)</span>
+                  {/* Fallback Manual Thumbnail Field */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono uppercase tracking-wider text-[#8B949E]">
+                      URL Thumbnail Fallback (Manual)
                     </label>
-                    <p className="text-xs text-slate-400">Digunakan sebagai cadangan apabila auto-extract metadata link gagal/kosong.</p>
+                    <p className="text-[10px] font-mono text-[#57606A]">Cadangan apabila auto-extract metadata link gagal atau kosong.</p>
                     <input
                       type="url"
                       value={fallbackThumbnailUrl}
                       onChange={(e) => setFallbackThumbnailUrl(e.target.value)}
-                      placeholder="https://... (URL gambar thumbnail manual)"
-                      className="w-full min-h-[48px] px-3.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="https://... (URL gambar thumbnail)"
+                      className="w-full min-h-[36px] px-3 rounded-md bg-[#111319] border border-[#30363D] text-[#F0F6FC] text-xs focus:outline-none focus:border-[#E5A93C] placeholder:text-[#57606A] transition"
                     />
                   </div>
                 </div>
@@ -550,32 +553,32 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
               return (
                 <div
                   key={field.id}
-                  className="rounded-2xl border border-slate-800 bg-slate-950/60 overflow-hidden"
+                  className="rounded-md border border-[#30363D] bg-[#181B22] overflow-hidden"
                 >
                   <button
                     type="button"
                     onClick={() => setIsNotesOpen(!isNotesOpen)}
-                    className="w-full min-h-[48px] px-4 py-3 flex items-center justify-between text-left hover:bg-slate-900/50 transition"
+                    className="w-full px-3 py-2.5 flex items-center justify-between text-left hover:bg-[#212631]/60 transition cursor-pointer"
                   >
                     <div>
-                      <div className="text-sm font-bold text-slate-200">{field.label}</div>
-                      <div className="text-xs text-slate-400">{field.description}</div>
+                      <div className="text-xs font-semibold text-[#F0F6FC]">{field.label}</div>
+                      <div className="text-[10px] font-mono text-[#8B949E]">{field.description}</div>
                     </div>
                     {isNotesOpen ? (
-                      <ChevronUp className="w-4 h-4 text-slate-400" />
+                      <ChevronUp className="w-4 h-4 text-[#8B949E]" />
                     ) : (
-                      <ChevronDown className="w-4 h-4 text-slate-400" />
+                      <ChevronDown className="w-4 h-4 text-[#8B949E]" />
                     )}
                   </button>
 
                   {isNotesOpen && (
-                    <div className="p-4 pt-1 border-t border-slate-800/80 animate-in fade-in">
+                    <div className="p-3 pt-0 border-t border-[#30363D] bg-[#111319]/50 animate-in fade-in">
                       <textarea
                         rows={4}
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Tuliskan ulasan mendalam, poin penting sinematografi, atau catatan khusus..."
-                        className="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+                        placeholder="Tuliskan ulasan mendalam, poin sinematografi, atau catatan khusus..."
+                        className="w-full p-2.5 mt-2 rounded-md bg-[#111319] border border-[#30363D] text-[#F0F6FC] text-xs placeholder:text-[#57606A] focus:outline-none focus:border-[#E5A93C] resize-y transition"
                       />
                     </div>
                   )}
@@ -583,26 +586,26 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
               );
             }
 
-            // 4. RATING FOLDERS (Clean, dedicated purely to scoring)
+            // 4. RATING FOLDERS
             if (field.type === 'rating_folder') {
               return (
-                <div key={field.id} className="space-y-3 pt-2">
+                <div key={field.id} className="space-y-2 p-3 rounded-md bg-[#181B22] border border-[#30363D]">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <h3 className="text-xs font-semibold text-[#F0F6FC] flex items-center gap-1.5">
                         <span>{field.label}</span>
-                        <span className="text-xs font-semibold text-indigo-400">
+                        <span className="text-[10px] font-mono text-[#E5A93C]">
                           ({ratingFolders.length} Kategori)
                         </span>
                       </h3>
-                      <p className="text-xs text-slate-400">
-                        Fokus menilai parameter di bawah. Konfigurasi struktur kategori diatur di Pengaturan.
+                      <p className="text-[10px] font-mono text-[#57606A]">
+                        Penilaian parameter skor per folder (0-100).
                       </p>
                     </div>
                   </div>
 
-                  {/* Folders List (Clean Evaluation View) */}
-                  <div className="space-y-3">
+                  {/* Folders List */}
+                  <div className="space-y-2 pt-1">
                     {ratingFolders.map((folder, folderIdx) => {
                       const isFolderOpen = openFolderIds[folder.id] !== false; // default open
                       const folderItemsAvg =
@@ -616,63 +619,63 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                       return (
                         <div
                           key={folder.id}
-                          className="rounded-2xl border border-slate-800 bg-slate-950/80 overflow-hidden shadow-sm"
+                          className="rounded-md border border-[#30363D] bg-[#111319] overflow-hidden"
                         >
-                          {/* Folder Header Accordion (Clean - Title only) */}
+                          {/* Folder Header Accordion */}
                           <button
                             type="button"
                             onClick={() => toggleFolderAccordion(folder.id)}
-                            className="w-full flex items-center justify-between p-3.5 bg-slate-900/90 hover:bg-slate-900 transition border-b border-slate-800 text-left"
+                            className="w-full flex items-center justify-between p-2.5 bg-[#181B22] hover:bg-[#212631] transition border-b border-[#30363D] text-left cursor-pointer"
                           >
-                            <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
-                              <span className="w-6 h-6 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xs font-bold shrink-0">
+                            <div className="flex items-center gap-2 flex-1 min-w-0 pr-2">
+                              <span className="w-5 h-5 rounded bg-[#212631] text-[#E5A93C] border border-[#30363D] flex items-center justify-center text-[10px] font-mono font-bold shrink-0">
                                 {folderIdx + 1}
                               </span>
-                              <span className="font-bold text-sm text-white truncate">
+                              <span className="font-semibold text-xs text-[#F0F6FC] truncate">
                                 {folder.name}
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-2.5 shrink-0">
-                              <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-800 text-indigo-300 border border-slate-700/60">
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#111319] text-[#E5A93C] border border-[#30363D]">
                                 Rerata: {folderItemsAvg}
                               </span>
-                              <div className="p-1 rounded-lg text-slate-400">
+                              <div className="p-0.5 rounded text-[#8B949E]">
                                 {isFolderOpen ? (
-                                  <ChevronUp className="w-4 h-4" />
+                                  <ChevronUp className="w-3.5 h-3.5" />
                                 ) : (
-                                  <ChevronDown className="w-4 h-4" />
+                                  <ChevronDown className="w-3.5 h-3.5" />
                                 )}
                               </div>
                             </div>
                           </button>
 
-                          {/* Folder Items Container (Clean Evaluation Inputs) */}
+                          {/* Folder Items Container */}
                           {isFolderOpen && (
-                            <div className="p-3.5 space-y-3 animate-in fade-in">
+                            <div className="p-2.5 space-y-2 animate-in fade-in">
                               {folder.items.map((item, itemIdx) => (
                                 <div
                                   key={item.id}
-                                  className="p-3 rounded-xl bg-slate-900/70 border border-slate-800/90 space-y-2.5"
+                                  className="p-2.5 rounded-md bg-[#181B22] border border-[#30363D] space-y-2"
                                 >
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="flex-1 min-w-0">
-                                      <span className="text-xs font-bold text-slate-200">
+                                      <span className="text-xs font-semibold text-[#F0F6FC]">
                                         {itemIdx + 1}. {item.name}
                                       </span>
                                       {item.description && (
-                                        <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                                        <p className="text-[10px] font-mono text-[#8B949E] mt-0.5 leading-relaxed">
                                           {item.description}
                                         </p>
                                       )}
                                     </div>
-                                    <span className="text-xs font-black text-indigo-400 bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-800/50 shrink-0">
+                                    <span className="text-xs font-mono font-bold text-[#E5A93C] bg-[#111319] px-2 py-0.5 rounded border border-[#30363D] shrink-0">
                                       {item.score} / 100
                                     </span>
                                   </div>
 
                                   {/* Score Slider + Number Input (0-100) */}
-                                  <div className="flex items-center gap-3">
+                                  <div className="flex items-center gap-2.5">
                                     <input
                                       type="range"
                                       min="0"
@@ -685,7 +688,7 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                                           Number(e.target.value)
                                         )
                                       }
-                                      className="flex-1 accent-indigo-500 h-2.5 bg-slate-800 rounded-lg cursor-pointer"
+                                      className="flex-1 accent-[#E5A93C] h-2 bg-[#212631] rounded-md cursor-pointer"
                                     />
                                     <input
                                       type="number"
@@ -700,7 +703,7 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                                         );
                                         handleUpdateItemScore(folder.id, item.id, val);
                                       }}
-                                      className="w-16 min-h-[38px] px-2 text-center text-sm font-bold rounded-lg bg-slate-950 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                      className="w-14 min-h-[32px] px-1 text-center text-xs font-mono font-bold rounded bg-[#111319] border border-[#30363D] text-[#F0F6FC] focus:outline-none focus:border-[#E5A93C]"
                                     />
                                   </div>
                                 </div>
@@ -722,24 +725,23 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
               );
 
               return (
-                <div key={field.id} className="space-y-3">
+                <div key={field.id} className="space-y-2 p-3 rounded-md bg-[#181B22] border border-[#30363D]">
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-bold text-slate-200">
+                    <label className="text-xs font-semibold text-[#F0F6FC]">
                       {field.label}
                     </label>
-                    <span className="text-xs text-indigo-400 font-semibold">
+                    <span className="text-[10px] font-mono text-[#E5A93C]">
                       {selectedArtistIds.length} dipilih
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400">{field.description}</p>
+                  {field.description && <p className="text-[10px] font-mono text-[#57606A]">{field.description}</p>}
 
                   {/* Selected Artists Cards with Role Status and Slider Nilai Performa (P) */}
                   {selectedArtists.length > 0 && (
-                    <div className="space-y-2.5 pt-1">
+                    <div className="space-y-2 pt-1">
                       {selectedArtists.map((artist) => {
                         const currentRole = artistRoles[artist.id] !== undefined ? artistRoles[artist.id] : '';
                         const weightS = getRoleWeightS(currentRole);
-                        // Default performance P
                         const currentP = artistPerformances[artist.id] !== undefined ? artistPerformances[artist.id] : (!initialVideo ? 0 : weightS);
                         const peranUtamaArtist =
                           artist.textFields?.['Peran Utama'] || 'Aktor / Seniman Film';
@@ -747,20 +749,20 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                         return (
                           <div
                             key={artist.id}
-                            className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-3 shadow-sm"
+                            className="p-2.5 rounded-md bg-[#111319] border border-[#30363D] space-y-2"
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="flex items-center gap-2 min-w-0">
                                 <img
                                   src={artist.avatarUrl}
                                   alt={artist.name}
-                                  className="w-8 h-8 rounded-full object-cover bg-slate-800 shrink-0"
+                                  className="w-7 h-7 rounded-full object-cover bg-[#0F1117] border border-[#30363D] shrink-0"
                                 />
                                 <div className="min-w-0">
-                                  <div className="text-xs font-bold text-white truncate">
+                                  <div className="text-xs font-semibold text-[#F0F6FC] truncate">
                                     {artist.name}
                                   </div>
-                                  <div className="text-[10px] text-indigo-400 font-semibold truncate">
+                                  <div className="text-[10px] font-mono text-[#8B949E] truncate">
                                     {peranUtamaArtist}
                                   </div>
                                 </div>
@@ -769,22 +771,18 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => toggleArtist(artist.id)}
-                                className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-900 transition cursor-pointer"
+                                className="p-1 rounded text-[#8B949E] hover:text-rose-400 hover:bg-[#212631] transition cursor-pointer"
                                 title="Hapus artis ini"
                               >
-                                <X className="w-4 h-4" />
+                                <X className="w-3.5 h-3.5" />
                               </button>
                             </div>
 
-                            {/* Status Peran input (Poin 1A & 1B: Supports empty string / null without reverting) */}
-                            <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
-                              <div className="flex items-center justify-between text-[11px]">
-                                <span className="font-semibold text-slate-300">
-                                  Status Peran di Video Ini:
-                                </span>
-                                <span className="text-[10px] text-slate-400">
-                                  (S = {weightS}%)
-                                </span>
+                            {/* Status Peran input */}
+                            <div className="space-y-1 pt-1.5 border-t border-[#30363D]">
+                              <div className="flex items-center justify-between text-[10px] font-mono">
+                                <span className="text-[#8B949E]">Status Peran di Video Ini:</span>
+                                <span className="text-[#E5A93C] font-semibold">(S = {weightS}%)</span>
                               </div>
                               <input
                                 type="text"
@@ -794,9 +792,8 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                                   const val = e.target.value;
                                   setArtistRoles((prev) => ({
                                     ...prev,
-                                    [artist.id]: val, // Supports empty string!
+                                    [artist.id]: val,
                                   }));
-                                  // Update performance slider default to new role's S weight if not customized
                                   const newS = getRoleWeightS(val);
                                   setArtistPerformances((prev) => ({
                                     ...prev,
@@ -804,12 +801,12 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                                   }));
                                 }}
                                 placeholder="Kosongkan atau ketik status peran..."
-                                className="w-full min-h-[38px] px-3 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                className="w-full min-h-[32px] px-2.5 rounded bg-[#181B22] border border-[#30363D] text-xs text-[#F0F6FC] placeholder:text-[#57606A] focus:outline-none focus:border-[#E5A93C]"
                               />
 
                               {/* Quick Dynamic Role Suggestions */}
                               {roleSuggestions.length > 0 && (
-                                <div className="flex flex-wrap gap-1 pt-1">
+                                <div className="flex flex-wrap gap-1 pt-0.5">
                                   {roleSuggestions.map((sug) => (
                                     <button
                                       key={sug}
@@ -825,10 +822,10 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                                           [artist.id]: newS,
                                         }));
                                       }}
-                                      className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition cursor-pointer ${
+                                      className={`px-1.5 py-0.5 rounded text-[9px] font-mono transition cursor-pointer ${
                                         currentRole.toLowerCase() === sug.toLowerCase()
-                                          ? 'bg-indigo-600 text-white font-bold'
-                                          : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 hover:bg-slate-800'
+                                          ? 'bg-[#E5A93C] text-[#0F1117] font-bold'
+                                          : 'bg-[#181B22] text-[#8B949E] hover:text-[#F0F6FC] border border-[#30363D] hover:bg-[#212631]'
                                       }`}
                                     >
                                       {sug}
@@ -838,18 +835,14 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                               )}
                             </div>
 
-                            {/* Slider Nilai Performa (P) - Rentang 0-100 (Poin 1C & 1D) */}
-                            <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="font-bold text-slate-200">
-                                  Nilai Performa (P):
-                                </span>
-                                <span className="font-extrabold text-indigo-400 text-sm">
-                                  {currentP}%
-                                </span>
+                            {/* Slider Nilai Performa (P) - Rentang 0-100 */}
+                            <div className="space-y-1 pt-1.5 border-t border-[#30363D]">
+                              <div className="flex items-center justify-between text-[10px] font-mono">
+                                <span className="text-[#8B949E]">Nilai Performa (P):</span>
+                                <span className="text-[#E5A93C] font-bold text-xs">{currentP}%</span>
                               </div>
 
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2.5">
                                 <input
                                   type="range"
                                   min="0"
@@ -862,7 +855,7 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                                       [artist.id]: val,
                                     }));
                                   }}
-                                  className="flex-1 accent-indigo-500 h-2 bg-slate-800 rounded-lg cursor-pointer"
+                                  className="flex-1 accent-[#E5A93C] h-2 bg-[#212631] rounded-md cursor-pointer"
                                 />
                                 <input
                                   type="number"
@@ -877,10 +870,10 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                                       [artist.id]: val,
                                     }));
                                   }}
-                                  className="w-16 min-h-[36px] px-2 text-center text-xs font-bold rounded-lg bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  className="w-14 min-h-[30px] px-1 text-center text-xs font-mono font-bold rounded bg-[#181B22] border border-[#30363D] text-[#F0F6FC] focus:outline-none focus:border-[#E5A93C]"
                                 />
                               </div>
-                              <p className="text-[10px] text-slate-400">
+                              <p className="text-[9px] font-mono text-[#57606A]">
                                 Rumus Nilai Didapat: (V × (S + P)) / 200
                               </p>
                             </div>
@@ -897,14 +890,14 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                     ))}
                   </datalist>
 
-                  {/* Open Bottom Sheet Button (min height 48px) */}
+                  {/* Open Bottom Sheet Button */}
                   <button
                     type="button"
                     onClick={() => setIsArtistSheetOpen(true)}
-                    className="w-full min-h-[48px] px-4 rounded-xl bg-slate-950 border border-slate-700 hover:border-indigo-500 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-between transition cursor-pointer"
+                    className="w-full min-h-[36px] px-3 rounded-md bg-[#111319] border border-[#30363D] hover:border-[#E5A93C] text-[#8B949E] hover:text-[#F0F6FC] text-xs font-mono flex items-center justify-between transition cursor-pointer"
                   >
                     <span>Pilih Artis yang Terlibat...</span>
-                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                    <ChevronDown className="w-3.5 h-3.5 text-[#8B949E]" />
                   </button>
                 </div>
               );
@@ -915,38 +908,36 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
               const selectedTags = multiChoices[field.id] || [];
               const options = field.options || [];
 
-              // Real-time clicked option or last selected tag
               const activeOpt =
                 activeOptionPerField[field.id] ||
                 (selectedTags.length > 0 ? selectedTags[selectedTags.length - 1] : null);
               const activeOptDesc = activeOpt ? field.optionDescriptions?.[activeOpt] : null;
 
               return (
-                <div key={field.id} className="space-y-2">
+                <div key={field.id} className="space-y-1.5 p-3 rounded-md bg-[#181B22] border border-[#30363D]">
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-bold text-slate-200">
+                    <label className="text-xs font-semibold text-[#F0F6FC]">
                       {field.label}
                     </label>
                     {selectedTags.length > 0 && (
-                      <span className="text-xs text-indigo-400 font-semibold">
+                      <span className="text-[10px] font-mono text-[#E5A93C]">
                         {selectedTags.length} dipilih
                       </span>
                     )}
                   </div>
 
-                  {/* Description area: replaced in real-time by selected item description */}
                   {activeOptDesc ? (
-                    <div className="p-2.5 rounded-xl bg-indigo-950/40 border border-indigo-800/40 animate-in fade-in">
-                      <p className="text-xs text-indigo-300 leading-relaxed">
-                        <strong className="text-indigo-200 font-bold">{activeOpt}: </strong>
+                    <div className="p-2 rounded-md bg-[#111319] border border-[#30363D] animate-in fade-in">
+                      <p className="text-[11px] font-mono text-[#E5A93C] leading-relaxed">
+                        <strong className="text-[#F0F6FC]">{activeOpt}: </strong>
                         {activeOptDesc}
                       </p>
                     </div>
-                  ) : (
-                    <p className="text-xs text-slate-400">{field.description}</p>
-                  )}
+                  ) : field.description ? (
+                    <p className="text-[10px] font-mono text-[#57606A]">{field.description}</p>
+                  ) : null}
 
-                  <div className="flex flex-wrap gap-1.5 pt-1">
+                  <div className="flex flex-wrap gap-1 pt-0.5">
                     {options.map((opt) => {
                       const isSelected = selectedTags.includes(opt);
                       return (
@@ -957,13 +948,13 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                             toggleMultiChoice(field.id, opt);
                             setActiveOptionPerField((prev) => ({ ...prev, [field.id]: opt }));
                           }}
-                          className={`min-h-[38px] px-3.5 rounded-xl text-xs font-semibold transition active:scale-95 flex items-center gap-1.5 border ${
+                          className={`min-h-[30px] px-2.5 rounded-md text-xs font-mono transition active:scale-95 flex items-center gap-1 border cursor-pointer ${
                             isSelected
-                              ? 'bg-indigo-600 text-white border-indigo-400 shadow-sm'
-                              : 'bg-slate-950 text-slate-300 border-slate-800 hover:bg-slate-800'
+                              ? 'bg-[#E5A93C] text-[#0F1117] border-[#E5A93C] font-semibold'
+                              : 'bg-[#111319] text-[#8B949E] hover:text-[#F0F6FC] border-[#30363D] hover:bg-[#212631]'
                           }`}
                         >
-                          {isSelected && <Check className="w-3.5 h-3.5" />}
+                          {isSelected && <Check className="w-3 h-3 stroke-[2.5]" />}
                           <span>{opt}</span>
                         </button>
                       );
@@ -982,26 +973,25 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
               const activeOptDesc = activeOpt ? field.optionDescriptions?.[activeOpt] : null;
 
               return (
-                <div key={field.id} className="space-y-2">
-                  <label className="text-sm font-bold text-slate-200">
+                <div key={field.id} className="space-y-1.5 p-3 rounded-md bg-[#181B22] border border-[#30363D]">
+                  <label className="text-xs font-semibold text-[#F0F6FC]">
                     {field.label}
                   </label>
 
-                  {/* Description area: replaced in real-time by selected item description */}
                   {activeOptDesc ? (
-                    <div className="p-2.5 rounded-xl bg-indigo-950/40 border border-indigo-800/40 animate-in fade-in">
-                      <p className="text-xs text-indigo-300 leading-relaxed">
-                        <strong className="text-indigo-200 font-bold">{activeOpt}: </strong>
+                    <div className="p-2 rounded-md bg-[#111319] border border-[#30363D] animate-in fade-in">
+                      <p className="text-[11px] font-mono text-[#E5A93C] leading-relaxed">
+                        <strong className="text-[#F0F6FC]">{activeOpt}: </strong>
                         {activeOptDesc}
                       </p>
                     </div>
-                  ) : (
-                    <p className="text-xs text-slate-400">{field.description}</p>
-                  )}
+                  ) : field.description ? (
+                    <p className="text-[10px] font-mono text-[#57606A]">{field.description}</p>
+                  ) : null}
 
-                  {/* Visual fast-tap pills for options */}
+                  {/* Fast tap pills */}
                   {options.length <= 8 && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
+                    <div className="flex flex-wrap gap-1 pt-0.5">
                       {options.map((opt) => {
                         const isSelected = currentValue === opt;
                         return (
@@ -1013,13 +1003,13 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                               setSingleChoices({ ...singleChoices, [field.id]: nextVal });
                               setActiveOptionPerField((prev) => ({ ...prev, [field.id]: nextVal }));
                             }}
-                            className={`min-h-[38px] px-3.5 rounded-xl text-xs font-semibold transition active:scale-95 flex items-center gap-1.5 border ${
+                            className={`min-h-[30px] px-2.5 rounded-md text-xs font-mono transition active:scale-95 flex items-center gap-1 border cursor-pointer ${
                               isSelected
-                                ? 'bg-indigo-600 text-white border-indigo-400 shadow-sm'
-                                : 'bg-slate-950 text-slate-300 border-slate-800 hover:bg-slate-800'
+                                ? 'bg-[#E5A93C] text-[#0F1117] border-[#E5A93C] font-semibold'
+                                : 'bg-[#111319] text-[#8B949E] hover:text-[#F0F6FC] border-[#30363D] hover:bg-[#212631]'
                             }`}
                           >
-                            {isSelected && <Check className="w-3.5 h-3.5" />}
+                            {isSelected && <Check className="w-3 h-3 stroke-[2.5]" />}
                             <span>{opt}</span>
                           </button>
                         );
@@ -1034,7 +1024,7 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                       setSingleChoices({ ...singleChoices, [field.id]: val });
                       setActiveOptionPerField((prev) => ({ ...prev, [field.id]: val }));
                     }}
-                    className="w-full min-h-[48px] px-3.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full min-h-[36px] px-2.5 rounded-md bg-[#111319] border border-[#30363D] text-[#F0F6FC] text-xs focus:outline-none focus:border-[#E5A93C] transition"
                   >
                     <option value="">-- Pilih {field.label} --</option>
                     {options.map((opt) => (
@@ -1050,11 +1040,11 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
             // 8. Custom Arbitrary Text Field
             if (field.type === 'custom_text') {
               return (
-                <div key={field.id} className="space-y-2">
-                  <label className="text-sm font-bold text-slate-200">
+                <div key={field.id} className="space-y-1 p-3 rounded-md bg-[#181B22] border border-[#30363D]">
+                  <label className="text-[10px] font-mono uppercase tracking-wider text-[#8B949E]">
                     {field.label}
                   </label>
-                  <p className="text-xs text-slate-400">{field.description}</p>
+                  {field.description && <p className="text-[10px] font-mono text-[#57606A]">{field.description}</p>}
                   <input
                     type="text"
                     required={!!field.is_required}
@@ -1066,7 +1056,7 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                       })
                     }
                     placeholder={`Masukkan ${field.label}...`}
-                    className="w-full min-h-[48px] px-3.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full min-h-[36px] px-3 rounded-md bg-[#111319] border border-[#30363D] text-[#F0F6FC] text-xs focus:outline-none focus:border-[#E5A93C] transition"
                   />
                 </div>
               );
@@ -1074,64 +1064,75 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
 
             return null;
           })}
-
-          {/* Sticky Save Button at the Bottom with High Contrast & Min 48px height */}
-          <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto p-4 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-30">
-            <button
-              type="submit"
-              id="btn-save-video-entry"
-              className="w-full min-h-[48px] rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-sm uppercase tracking-wider shadow-xl shadow-emerald-500/20 active:scale-98 transition flex items-center justify-center gap-2"
-            >
-              <Check className="w-5 h-5 stroke-[3px]" />
-              <span>Simpan Entri Video</span>
-            </button>
-          </div>
         </form>
 
-        {/* Multi-Select Artist Bottom Sheet */}
+        {/* Compact Modal Footer */}
+        <div className="px-4 py-2.5 border-t border-[#30363D] bg-[#111319] shrink-0 flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3 py-1.5 rounded-md bg-[#212631] text-[#8B949E] hover:text-[#F0F6FC] border border-[#30363D] font-mono text-xs transition cursor-pointer"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            id="btn-save-video-entry"
+            className="px-4 py-1.5 rounded-md bg-[#E5A93C] hover:bg-[#F0B854] text-[#0F1117] font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer active:scale-98 shadow-sm"
+          >
+            <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span>Simpan Entri Video</span>
+          </button>
+        </div>
+
+        {/* Multi-Select Artist Sheet / Modal */}
         {isArtistSheetOpen && (
-          <div className="fixed inset-0 z-60 flex flex-col justify-end bg-black/80 backdrop-blur-xs animate-in fade-in">
-            <div className="w-full max-w-lg mx-auto bg-slate-900 border-t border-slate-700 rounded-t-3xl max-h-[80vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom">
-              <div className="flex items-center justify-between p-4 border-b border-slate-800">
-                <h3 className="text-base font-bold text-white">
-                  Pilih Artis yang Terlibat
-                </h3>
+          <div className="fixed inset-0 z-60 flex flex-col justify-end sm:justify-center bg-black/85 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in">
+            <div className="w-full max-w-xl mx-auto bg-[#181B22] border border-[#30363D] rounded-t-xl sm:rounded-xl max-h-[85vh] sm:max-h-[80vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom-2 duration-150">
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#30363D] bg-[#111319]">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#E5A93C]" />
+                  <h3 className="text-xs font-semibold text-[#F0F6FC]">
+                    Pilih Artis yang Terlibat
+                  </h3>
+                </div>
                 <button
                   type="button"
                   onClick={() => setIsArtistSheetOpen(false)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-white"
+                  className="p-1 rounded text-[#8B949E] hover:text-[#F0F6FC] hover:bg-[#212631] transition cursor-pointer"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Search & Quick Add */}
-              <div className="p-4 space-y-3 border-b border-slate-800">
+              <div className="p-3 space-y-2 border-b border-[#30363D] bg-[#111319]/40">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#57606A]" />
                   <input
                     type="text"
                     value={artistSearchQuery}
                     onChange={(e) => setArtistSearchQuery(e.target.value)}
                     placeholder="Cari nama artis..."
-                    className="w-full min-h-[44px] pl-9 pr-4 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="w-full min-h-[34px] pl-8 pr-3 rounded-md bg-[#111319] border border-[#30363D] text-[#F0F6FC] text-xs placeholder:text-[#57606A] focus:outline-none focus:border-[#E5A93C]"
                   />
                 </div>
 
                 {onQuickCreateArtist && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5">
                     <input
                       type="text"
                       value={newArtistName}
                       onChange={(e) => setNewArtistName(e.target.value)}
                       placeholder="+ Tambah profil artis baru..."
-                      className="flex-1 min-h-[40px] px-3 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      className="flex-1 min-h-[34px] px-3 rounded-md bg-[#111319] border border-[#30363D] text-[#F0F6FC] text-xs placeholder:text-[#57606A] focus:outline-none focus:border-[#E5A93C]"
                     />
                     <button
                       type="button"
                       onClick={handleQuickAddArtist}
                       disabled={!newArtistName.trim()}
-                      className="min-h-[40px] px-3 rounded-xl bg-indigo-600 disabled:opacity-40 text-white text-xs font-bold flex items-center gap-1"
+                      className="min-h-[34px] px-3 rounded-md bg-[#E5A93C] hover:bg-[#F0B854] disabled:opacity-40 text-[#0F1117] text-xs font-semibold flex items-center gap-1 cursor-pointer transition active:scale-95 shrink-0"
                     >
                       <UserPlus className="w-3.5 h-3.5" />
                       <span>Buat</span>
@@ -1141,9 +1142,9 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
               </div>
 
               {/* Artists Checklist */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-2 divide-y divide-slate-800/40">
+              <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
                 {filteredArtists.length === 0 ? (
-                  <p className="text-center text-xs text-slate-500 py-6">
+                  <p className="text-center text-xs font-mono text-[#57606A] py-6">
                     Tidak ada artis yang cocok. Tambahkan baru di atas!
                   </p>
                 ) : (
@@ -1154,34 +1155,36 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
                         key={artist.id}
                         type="button"
                         onClick={() => toggleArtist(artist.id)}
-                        className={`w-full flex items-center justify-between p-3 rounded-xl transition text-left ${
-                          isSelected ? 'bg-indigo-950/50' : 'hover:bg-slate-800/40'
+                        className={`w-full flex items-center justify-between p-2 rounded-md transition text-left border cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#212631] border-[#E5A93C]'
+                            : 'bg-[#181B22] border-[#30363D] hover:border-[#8B949E]/50'
                         }`}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
                           <img
                             src={artist.avatarUrl}
                             alt={artist.name}
-                            className="w-10 h-10 rounded-full object-cover bg-slate-800"
+                            className="w-8 h-8 rounded-full object-cover bg-[#0F1117] border border-[#30363D] shrink-0"
                           />
-                          <div>
-                            <div className="text-sm font-bold text-white">
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-[#F0F6FC] truncate">
                               {artist.name}
                             </div>
-                            <div className="text-xs font-semibold text-indigo-400 line-clamp-1">
+                            <div className="text-[10px] font-mono text-[#8B949E] truncate">
                               {artist.textFields?.['Peran Utama'] || 'Aktor / Seniman Film'}
                             </div>
                           </div>
                         </div>
 
                         <div
-                          className={`w-6 h-6 rounded-full border flex items-center justify-center transition ${
+                          className={`w-5 h-5 rounded border flex items-center justify-center transition shrink-0 ${
                             isSelected
-                              ? 'bg-indigo-600 border-indigo-400 text-white'
-                              : 'border-slate-700 bg-slate-950'
+                              ? 'bg-[#E5A93C] border-[#E5A93C] text-[#0F1117]'
+                              : 'border-[#30363D] bg-[#111319]'
                           }`}
                         >
-                          {isSelected && <Check className="w-3.5 h-3.5" />}
+                          {isSelected && <Check className="w-3 h-3 stroke-[2.5]" />}
                         </div>
                       </button>
                     );
@@ -1190,11 +1193,11 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
               </div>
 
               {/* Bottom Sheet Done Button */}
-              <div className="p-4 border-t border-slate-800 bg-slate-900">
+              <div className="p-3 border-t border-[#30363D] bg-[#111319] flex justify-end">
                 <button
                   type="button"
                   onClick={() => setIsArtistSheetOpen(false)}
-                  className="w-full min-h-[48px] rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm transition"
+                  className="px-4 py-1.5 rounded-md bg-[#E5A93C] hover:bg-[#F0B854] text-[#0F1117] font-semibold text-xs transition cursor-pointer"
                 >
                   Selesai ({selectedArtistIds.length} Terpilih)
                 </button>
