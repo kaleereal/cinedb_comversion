@@ -74,6 +74,8 @@ export const ArtistDetailView: React.FC<ArtistDetailViewProps> = ({
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [isFootnoteOpen, setIsFootnoteOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [isAtributTerkaitOpen, setIsAtributTerkaitOpen] = useState(true);
+  const [isTrenPerformaOpen, setIsTrenPerformaOpen] = useState(true);
   const [readingNote, setReadingNote] = useState<GalleryNote | null>(null);
 
   // Sorting state for Performance Table
@@ -532,80 +534,114 @@ export const ArtistDetailView: React.FC<ArtistDetailViewProps> = ({
             </div>
           </div>
 
-          {/* Dynamic Aggregated Attributes (Real-time Tag Heritage from Linked Videos) */}
-          <div className="mt-2.5 p-2.5 w-full rounded-md bg-[#111319] border border-[#30363D]/70 text-left space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] uppercase tracking-wider text-[#8B949E] font-mono flex items-center gap-1">
-                <Tags className="w-3 h-3 text-[#E5A93C]" />
-                <span>Atribut Terkait (Warisan Video)</span>
-              </span>
-              <span className="text-[8px] font-mono px-1.5 py-0.2 rounded bg-[#212631] text-[#E5A93C] border border-[#30363D]">
-                Real-time
-              </span>
-            </div>
+          {/* Dynamic Aggregated Attributes (Real-time Tag Heritage from Linked Videos) - Collapsible Accordion */}
+          <div className="mt-2.5 w-full rounded-md bg-[#111319] border border-[#30363D]/70 text-left overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setIsAtributTerkaitOpen(!isAtributTerkaitOpen)}
+              className="w-full flex items-center justify-between p-2.5 bg-[#181B22]/60 hover:bg-[#212631] transition cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-1.5">
+                <Tags className="w-3.5 h-3.5 text-[#E5A93C]" />
+                <span className="text-[9px] uppercase tracking-wider text-[#8B949E] font-mono font-bold">
+                  Atribut Terkait (Warisan Video)
+                </span>
+                <span className="text-[8px] font-mono px-1.5 py-0.2 rounded bg-[#212631] text-[#E5A93C] border border-[#30363D] ml-1">
+                  Real-time
+                </span>
+              </div>
+              <div className="flex items-center gap-1 text-[#8B949E] text-xs font-mono">
+                <span>{isAtributTerkaitOpen ? 'Tutup' : 'Buka'}</span>
+                {isAtributTerkaitOpen ? (
+                  <ChevronUp className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                )}
+              </div>
+            </button>
 
-            {dynamicAggregatedAttributes.length === 0 ? (
-              <p className="text-[10px] font-mono text-[#57606A] italic">
-                {linkedVideos.length === 0
-                  ? 'Belum ada video tertaut untuk akumulasi atribut.'
-                  : 'Video tertaut belum memilih opsi tag/kategori.'}
-              </p>
-            ) : (
-              <div className="space-y-1.5">
-                {dynamicAggregatedAttributes.map((group) => (
-                  <div key={group.fieldId} className="space-y-1">
-                    <span className="text-[9px] font-mono text-[#8B949E] uppercase">
-                      {group.fieldLabel}:
-                    </span>
-                    <div className="flex flex-wrap gap-1">
-                      {group.values.map((val) => {
-                        const rankDetail = getArtistTagRankDetail(
-                          artist.id,
-                          group.fieldId,
-                          val,
-                          effectiveArtists,
-                          effectiveVideos,
-                          effectivePivots
-                        );
-                        const rank = rankDetail ? rankDetail.rank : null;
-                        const total = rankDetail ? rankDetail.total : null;
-                        return (
-                          <button
-                            key={val}
-                            type="button"
-                            onClick={() => onSelectFilterTag?.(group.fieldId, val)}
-                            className="px-2 py-0.5 rounded text-[10px] font-mono bg-[#181B22] hover:bg-[#212631] border border-[#30363D] hover:border-[#E5A93C]/50 text-[#F0F6FC] transition flex items-center gap-1 active:scale-95 cursor-pointer"
-                          >
-                            <Trophy className="w-2.5 h-2.5 text-[#E5A93C]" />
-                            <span>{val}</span>
-                            <span className="text-[9px] text-[#E5A93C] bg-[#212631] px-1 rounded border border-[#30363D]">
-                              {rank
-                                ? `#${rank}${total && total > 1 ? `/${total}` : ''}`
-                                : '➔'}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
+            {isAtributTerkaitOpen && (
+              <div className="p-2.5 pt-1.5 border-t border-[#30363D]/50 space-y-2 animate-in fade-in">
+                {dynamicAggregatedAttributes.length === 0 ? (
+                  <p className="text-[10px] font-mono text-[#57606A] italic">
+                    {linkedVideos.length === 0
+                      ? 'Belum ada video tertaut untuk akumulasi atribut.'
+                      : 'Video tertaut belum memilih opsi tag/kategori.'}
+                  </p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {dynamicAggregatedAttributes.map((group) => (
+                      <div key={group.fieldId} className="space-y-1">
+                        <span className="text-[9px] font-mono text-[#8B949E] uppercase">
+                          {group.fieldLabel}:
+                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {group.values.map((val) => {
+                            const rankDetail = getArtistTagRankDetail(
+                              artist.id,
+                              group.fieldId,
+                              val,
+                              effectiveArtists,
+                              effectiveVideos,
+                              effectivePivots
+                            );
+                            const rank = rankDetail ? rankDetail.rank : null;
+                            const total = rankDetail ? rankDetail.total : null;
+                            return (
+                              <button
+                                key={val}
+                                type="button"
+                                onClick={() => onSelectFilterTag?.(group.fieldId, val)}
+                                className="px-2 py-0.5 rounded text-[10px] font-mono bg-[#181B22] hover:bg-[#212631] border border-[#30363D] hover:border-[#E5A93C]/50 text-[#F0F6FC] transition flex items-center gap-1 active:scale-95 cursor-pointer"
+                              >
+                                <Trophy className="w-2.5 h-2.5 text-[#E5A93C]" />
+                                <span>{val}</span>
+                                <span className="text-[9px] text-[#E5A93C] bg-[#212631] px-1 rounded border border-[#30363D]">
+                                  {rank
+                                    ? `#${rank}${total && total > 1 ? `/${total}` : ''}`
+                                    : '➔'}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             )}
           </div>
 
-          {/* SEKSI BARU: TREN PERFORMA ARTIS */}
-          <div className="mt-2.5 p-3 w-full rounded-md bg-[#111319] border border-[#30363D]/70 text-left space-y-3 font-mono">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase tracking-wider text-[#8B949E] font-bold flex items-center gap-1.5">
+          {/* SEKSI BARU: TREN PERFORMA ARTIS - Collapsible Accordion */}
+          <div className="mt-2.5 w-full rounded-md bg-[#111319] border border-[#30363D]/70 text-left overflow-hidden font-mono">
+            <button
+              type="button"
+              onClick={() => setIsTrenPerformaOpen(!isTrenPerformaOpen)}
+              className="w-full flex items-center justify-between p-2.5 bg-[#181B22]/60 hover:bg-[#212631] transition cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-1.5">
                 <TrendingUp className="w-3.5 h-3.5 text-[#E5A93C]" />
-                <span>Tren Performa Artis</span>
-              </span>
-              <span className="text-[8px] px-1.5 py-0.2 rounded bg-[#212631] text-[#E5A93C] border border-[#30363D]">
-                Kronologis
-              </span>
-            </div>
+                <span className="text-[10px] uppercase tracking-wider text-[#8B949E] font-bold">
+                  Tren Performa Artis
+                </span>
+                <span className="text-[8px] px-1.5 py-0.2 rounded bg-[#212631] text-[#E5A93C] border border-[#30363D] ml-1">
+                  Kronologis
+                </span>
+              </div>
+              <div className="flex items-center gap-1 text-[#8B949E] text-xs font-mono">
+                <span>{isTrenPerformaOpen ? 'Tutup' : 'Buka'}</span>
+                {isTrenPerformaOpen ? (
+                  <ChevronUp className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                )}
+              </div>
+            </button>
 
-            {(() => {
+            {isTrenPerformaOpen && (
+              <div className="p-3 pt-2 border-t border-[#30363D]/50 space-y-3 animate-in fade-in">
+                {(() => {
               // Get chronological list of video performance scores
               const chronologicalEntries = [...linkedVideos]
                 .sort((a, b) => new Date(a.releaseDate || a.createdAt).getTime() - new Date(b.releaseDate || b.createdAt).getTime())
@@ -718,6 +754,8 @@ export const ArtistDetailView: React.FC<ArtistDetailViewProps> = ({
                 </div>
               );
             })()}
+              </div>
+            )}
           </div>
         </div>
       </div>

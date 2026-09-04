@@ -354,10 +354,10 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
         {/* Scrollable Compact Form Body */}
         <form
           onSubmit={handleSubmit}
-          className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-[#111319]/20"
+          className="flex-1 overflow-y-auto bg-[#111319]/20"
         >
           {/* Real-time Overall Rating Sticky Compact Bar */}
-          <div className="sticky top-0 z-20 -mx-4 -mt-4 px-4 py-2.5 bg-[#111319]/95 backdrop-blur-xs border-b border-[#30363D] flex items-center justify-between gap-3">
+          <div className="sticky top-0 z-20 px-4 py-2.5 bg-[#111319] border-b border-[#30363D] flex items-center justify-between gap-3 shadow-sm">
             <div className="flex items-center gap-2.5">
               <RatingBadge score={overallRating} size="md" showIcon />
               <div>
@@ -399,6 +399,7 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
             </div>
           </div>
 
+          <div className="p-4 space-y-3.5">
           {/* Dynamic Field Renderer according to ordered field definitions */}
           {sortedFields.map((field) => {
             // 1. LINK FIELD
@@ -1064,6 +1065,7 @@ export const VideoFormModal: React.FC<VideoFormModalProps> = ({
 
             return null;
           })}
+          </div>
         </form>
 
         {/* Compact Modal Footer */}

@@ -61,6 +61,8 @@ export const VideoDetailView: React.FC<VideoDetailViewProps> = ({
     .map((id) => artists.find((a) => a.id === id))
     .filter(Boolean) as Artist[];
 
+  const [isKategoriTagOpen, setIsKategoriTagOpen] = useState(true);
+
   // Filter choice fields
   const choiceFields = fieldDefinitions.filter(
     (f) => f.type === 'multi_choice' || f.type === 'single_choice'
@@ -220,69 +222,82 @@ export const VideoDetailView: React.FC<VideoDetailViewProps> = ({
         )}
       </div>
 
-      {/* Kategori & Atribut Pilihan */}
+      {/* Kategori & Atribut Pilihan - Collapsible Accordion */}
       {choiceFields.length > 0 && (
-        <div className="p-3 rounded-md bg-[#181B22] border border-[#30363D] space-y-2.5">
-          <div className="flex items-center justify-between">
+        <div className="rounded-md bg-[#181B22] border border-[#30363D] overflow-hidden font-mono">
+          <button
+            type="button"
+            onClick={() => setIsKategoriTagOpen(!isKategoriTagOpen)}
+            className="w-full flex items-center justify-between p-3 hover:bg-[#212631] transition cursor-pointer text-left"
+          >
             <div className="flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-[#E5A93C]" />
-              <h2 className="text-[10px] font-mono uppercase tracking-wider text-[#8B949E]">
+              <h2 className="text-[10px] uppercase tracking-wider text-[#8B949E] font-bold">
                 Kategori &amp; Tag Pilihan
               </h2>
             </div>
-            <span className="text-[9px] font-mono text-[#57606A]">
-              Ketuk untuk Rank
-            </span>
-          </div>
+            <div className="flex items-center gap-1 text-[#8B949E] text-xs font-mono">
+              <span>{isKategoriTagOpen ? 'Tutup' : 'Buka'}</span>
+              {isKategoriTagOpen ? (
+                <ChevronUp className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5" />
+              )}
+            </div>
+          </button>
 
-          <div className="space-y-2">
-            {choiceFields.map((field) => {
-              let selectedOptions: string[] = [];
-              if (field.type === 'multi_choice') {
-                selectedOptions = video.multiChoices?.[field.id] || [];
-              } else if (field.type === 'single_choice') {
-                const val = video.singleChoices?.[field.id];
-                if (val && typeof val === 'string' && val.trim()) {
-                  selectedOptions = [val.trim()];
-                }
-              }
+          {isKategoriTagOpen && (
+            <div className="p-3 pt-0 border-t border-[#30363D]/60 space-y-2.5 animate-in fade-in">
+              <div className="space-y-2 pt-2">
+                {choiceFields.map((field) => {
+                  let selectedOptions: string[] = [];
+                  if (field.type === 'multi_choice') {
+                    selectedOptions = video.multiChoices?.[field.id] || [];
+                  } else if (field.type === 'single_choice') {
+                    const val = video.singleChoices?.[field.id];
+                    if (val && typeof val === 'string' && val.trim()) {
+                      selectedOptions = [val.trim()];
+                    }
+                  }
 
-              if (selectedOptions.length === 0) return null;
+                  if (selectedOptions.length === 0) return null;
 
-              return (
-                <div key={field.id} className="space-y-1">
-                  <span className="text-[10px] font-mono text-[#8B949E] block uppercase">
-                    {field.label}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {selectedOptions.map((opt) => {
-                      const desc = field.optionDescriptions?.[opt];
-                      return (
-                        <div key={opt} className="space-y-0.5">
-                          <button
-                            type="button"
-                            onClick={() => onSelectFilterTag(field.id, opt)}
-                            className="px-2 py-1 rounded bg-[#111319] hover:bg-[#212631] border border-[#30363D] hover:border-[#E5A93C]/50 text-[#F0F6FC] text-xs font-mono transition flex items-center gap-1 active:scale-95 group cursor-pointer"
-                          >
-                            <Trophy className="w-3 h-3 text-[#E5A93C]" />
-                            <span>{opt}</span>
-                            <span className="text-[10px] text-[#E5A93C]">
-                              ➔
-                            </span>
-                          </button>
-                          {desc && (
-                            <p className="text-[10px] font-mono text-[#8B949E] pl-1 leading-relaxed max-w-sm">
-                              {desc}
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  return (
+                    <div key={field.id} className="space-y-1">
+                      <span className="text-[10px] font-mono text-[#8B949E] block uppercase">
+                        {field.label}
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedOptions.map((opt) => {
+                          const desc = field.optionDescriptions?.[opt];
+                          return (
+                            <div key={opt} className="space-y-0.5">
+                              <button
+                                type="button"
+                                onClick={() => onSelectFilterTag(field.id, opt)}
+                                className="px-2 py-1 rounded bg-[#111319] hover:bg-[#212631] border border-[#30363D] hover:border-[#E5A93C]/50 text-[#F0F6FC] text-xs font-mono transition flex items-center gap-1 active:scale-95 group cursor-pointer"
+                              >
+                                <Trophy className="w-3 h-3 text-[#E5A93C]" />
+                                <span>{opt}</span>
+                                <span className="text-[10px] text-[#E5A93C]">
+                                  ➔
+                                </span>
+                              </button>
+                              {desc && (
+                                <p className="text-[10px] font-mono text-[#8B949E] pl-1 leading-relaxed max-w-sm">
+                                  {desc}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
