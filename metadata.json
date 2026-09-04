@@ -1,0 +1,6 @@
+{
+  "name": "Video & Artist Rating DB",
+  "description": "Aplikasi PWA mobile-first untuk manajemen database video dan artis dengan sistem rating bertingkat dan perhitungan agregat real-time.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

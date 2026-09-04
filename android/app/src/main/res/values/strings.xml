@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">CineRate DB</string>
+    <string name="title_activity_main">CineRate DB</string>
+    <string name="package_name">com.cinerate.app</string>
+    <string name="custom_url_scheme">com.cinerate.app</string>
+</resources>
