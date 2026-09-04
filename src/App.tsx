@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Film, Clapperboard, CheckCircle2, AlertCircle, FileText } from 'lucide-react';
+import { Film, CheckCircle2, AlertCircle } from 'lucide-react';
 import {
   Video,
   Artist,
@@ -326,53 +326,6 @@ export default function App() {
           {/* Offline Connectivity Banner */}
           <OfflineIndicator />
 
-        {/* Global App Header */}
-        <header className="flex items-center justify-between py-3 border-b border-slate-900 shrink-0 mb-4">
-          <button
-            onClick={() => {
-              setSelectedArtistId(null);
-              setSelectedVideoId(null);
-              setActiveTab('home');
-            }}
-            className="flex items-center gap-2.5 text-left group cursor-pointer"
-          >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 group-hover:scale-105 transition">
-              <Clapperboard className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-base font-black text-white tracking-tight flex items-center gap-1.5 leading-none">
-                <span>CineRate</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-600/30 text-indigo-400 border border-indigo-500/30">
-                  DB
-                </span>
-              </h1>
-              <p className="text-[11px] text-slate-400 font-medium leading-none mt-1">
-                Database Video &amp; Rating Artis
-              </p>
-            </div>
-          </button>
-
-          {/* Quick Access Button for Catatan Gallery in Header Toolbar */}
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedArtistId(null);
-              setSelectedVideoId(null);
-              setSelectedGalleryNoteId(null);
-              setActiveTab('gallery_notes');
-              window.location.hash = '#/gallery_notes';
-            }}
-            className={`px-3 py-1.5 rounded-xl border font-bold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-sm ${
-              activeTab === 'gallery_notes'
-                ? 'bg-indigo-600 border-indigo-500 text-white shadow-indigo-600/30'
-                : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-indigo-300 hover:text-white'
-            }`}
-            title="Kelola & Lihat Daftar Catatan Gallery"
-          >
-            <FileText className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Catatan Galeri</span>
-          </button>
-        </header>
 
         {/* Dynamic Main View Content */}
         <main className="flex-1">
@@ -509,6 +462,13 @@ export default function App() {
                   fieldDefinitions={fieldDefinitions}
                   onUpdateFields={handleUpdateFields}
                   onRefreshData={refreshAllData}
+                  onOpenGalleryNotes={() => {
+                    setSelectedArtistId(null);
+                    setSelectedVideoId(null);
+                    setSelectedGalleryNoteId(null);
+                    setActiveTab('gallery_notes');
+                    window.location.hash = '#/gallery_notes';
+                  }}
                 />
               )}
             </>
