@@ -70,12 +70,14 @@ interface SettingsViewProps {
   fieldDefinitions: CustomFieldDefinition[];
   onUpdateFields: (fields: CustomFieldDefinition[]) => void;
   onRefreshData: () => void;
+  onOpenGalleryNotes?: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
   fieldDefinitions,
   onUpdateFields,
   onRefreshData,
+  onOpenGalleryNotes,
 }) => {
   const { startThemeEditMode } = useTheme();
 
@@ -719,14 +721,27 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <Settings className="w-4 h-4 text-[#E5A93C]" />
           <span className="text-sm font-bold text-[#F0F6FC] tracking-tight">Pengaturan</span>
         </div>
-        <button
-          type="button"
-          onClick={startThemeEditMode}
-          className="px-2 py-1 rounded bg-[#212631] hover:bg-[#30363D] text-[#E5A93C] border border-[#30363D] text-xs flex items-center gap-1 transition active:scale-95 cursor-pointer"
-        >
-          <Palette className="w-3 h-3" />
-          <span>Edit Tema</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {onOpenGalleryNotes && (
+            <button
+              type="button"
+              onClick={onOpenGalleryNotes}
+              className="px-2 py-1 rounded bg-[#212631] hover:bg-[#30363D] text-[#F0F6FC] border border-[#30363D] text-xs flex items-center gap-1 transition active:scale-95 cursor-pointer"
+              title="Kelola & Lihat Daftar Catatan Galeri"
+            >
+              <FileText className="w-3 h-3 text-indigo-400" />
+              <span>Catatan Galeri</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={startThemeEditMode}
+            className="px-2 py-1 rounded bg-[#212631] hover:bg-[#30363D] text-[#E5A93C] border border-[#30363D] text-xs flex items-center gap-1 transition active:scale-95 cursor-pointer"
+          >
+            <Palette className="w-3 h-3" />
+            <span>Edit Tema</span>
+          </button>
+        </div>
       </div>
 
       {/* PWA Section (Collapsible, default: collapsed) */}
