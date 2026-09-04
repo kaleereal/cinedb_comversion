@@ -417,9 +417,14 @@ export const ArtistFormModal: React.FC<ArtistFormModalProps> = ({
               if (field.type === 'number') {
                 return (
                   <div key={field.id} className="space-y-1">
-                    <label className="text-[10px] font-mono uppercase tracking-wider text-[#8B949E]">
-                      {field.label}
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-mono uppercase tracking-wider text-[#8B949E]">
+                        {field.label}
+                      </label>
+                      <span className="text-[9px] font-mono text-[#E5A93C] bg-[#212631] px-1.5 py-0.2 rounded border border-[#30363D]">
+                        Dynamic Filter (Angka)
+                      </span>
+                    </div>
                     <input
                       type="number"
                       value={customNumberFields[field.label] ?? ''}
@@ -430,6 +435,33 @@ export const ArtistFormModal: React.FC<ArtistFormModalProps> = ({
                         })
                       }
                       placeholder={`Nilai ${field.label}...`}
+                      className="w-full min-h-[36px] px-3 rounded-md bg-[#181B22] border border-[#30363D] text-[#F0F6FC] text-xs focus:outline-none focus:border-[#E5A93C] transition font-mono"
+                    />
+                  </div>
+                );
+              }
+
+              if (field.type === 'text_dynamic_filter') {
+                return (
+                  <div key={field.id} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-mono uppercase tracking-wider text-[#8B949E]">
+                        {field.label}
+                      </label>
+                      <span className="text-[9px] font-mono text-[#E5A93C] bg-[#212631] px-1.5 py-0.2 rounded border border-[#30363D]">
+                        Dynamic Filter Tag
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      value={customTextFields[field.label] || ''}
+                      onChange={(e) =>
+                        setCustomTextFields({
+                          ...customTextFields,
+                          [field.label]: e.target.value,
+                        })
+                      }
+                      placeholder={`Nilai filter ${field.label} (misal: Agensi A, Jakarta, dll)...`}
                       className="w-full min-h-[36px] px-3 rounded-md bg-[#181B22] border border-[#30363D] text-[#F0F6FC] text-xs focus:outline-none focus:border-[#E5A93C] transition"
                     />
                   </div>

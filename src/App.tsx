@@ -99,7 +99,7 @@ export default function App() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // Initial Data Loading
+  // Initial Data Loading & Global Keyboard Avoidance
   useEffect(() => {
     const loadedVideos = loadVideos();
     const loadedArtists = loadArtists();
@@ -109,6 +109,22 @@ export default function App() {
     setArtists(loadedArtists);
     setFieldDefinitions(loadedFields);
     setIsLoading(false);
+
+    // Keyboard Avoidance: Auto-scroll focused input/textarea into visible viewport
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')
+      ) {
+        setTimeout(() => {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 250);
+      }
+    };
+
+    window.addEventListener('focusin', handleFocusIn);
+    return () => window.removeEventListener('focusin', handleFocusIn);
   }, []);
 
   const refreshAllData = () => {
@@ -491,19 +507,21 @@ export default function App() {
           )
         )}
 
-        {/* Bottom Navigation Bar (5 tabs) */}
-        <BottomNavigation
-          activeTab={activeTab}
-          onTabChange={(tab) => {
-            setSelectedArtistId(null);
-            setSelectedVideoId(null);
-            if (tab !== 'rank_videos') setVideoRankInitialFilter(null);
-            if (tab !== 'rank_artists') setArtistRankInitialFilter(null);
-            setActiveTab(tab);
-          }}
-          videoCount={videos.length}
-          artistCount={artists.length}
-        />
+        {/* Bottom Navigation Bar (5 tabs) - Sembunyikan saat membuka detail artis / video / catatan galeri tunggal */}
+        {(!selectedVideoId && !(activeTab === 'artists' && selectedArtistId) && !(activeTab === 'gallery_notes' && selectedGalleryNoteId)) && (
+          <BottomNavigation
+            activeTab={activeTab}
+            onTabChange={(tab) => {
+              setSelectedArtistId(null);
+              setSelectedVideoId(null);
+              if (tab !== 'rank_videos') setVideoRankInitialFilter(null);
+              if (tab !== 'rank_artists') setArtistRankInitialFilter(null);
+              setActiveTab(tab);
+            }}
+            videoCount={videos.length}
+            artistCount={artists.length}
+          />
+        )}
 
         {/* Video Form Modal (Create / Edit) */}
         <VideoFormModal

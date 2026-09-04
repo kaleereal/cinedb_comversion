@@ -106,6 +106,7 @@ export type FieldType =
   | 'multi_choice' 
   | 'single_choice'
   | 'custom_text'
+  | 'text_dynamic_filter'
   | 'button_link'
   | 'gallery_notes'
   | 'month_year'
@@ -176,6 +177,7 @@ export interface NoteBlock {
   id: string;
   type: 'text' | 'heading' | 'bullet_list' | 'image' | 'quote';
   content: string;
+  images?: string[];
   bold?: boolean;
   italic?: boolean;
 }

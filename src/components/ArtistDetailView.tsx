@@ -74,6 +74,8 @@ export const ArtistDetailView: React.FC<ArtistDetailViewProps> = ({
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [isFootnoteOpen, setIsFootnoteOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [isAtributTerkaitOpen, setIsAtributTerkaitOpen] = useState(true);
+  const [isTrenPerformaOpen, setIsTrenPerformaOpen] = useState(true);
   const [readingNote, setReadingNote] = useState<GalleryNote | null>(null);
 
   // Sorting state for Performance Table
@@ -532,63 +534,226 @@ export const ArtistDetailView: React.FC<ArtistDetailViewProps> = ({
             </div>
           </div>
 
-          {/* Dynamic Aggregated Attributes (Real-time Tag Heritage from Linked Videos) */}
-          <div className="mt-2.5 p-2.5 w-full rounded-md bg-[#111319] border border-[#30363D]/70 text-left space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] uppercase tracking-wider text-[#8B949E] font-mono flex items-center gap-1">
-                <Tags className="w-3 h-3 text-[#E5A93C]" />
-                <span>Atribut Terkait (Warisan Video)</span>
-              </span>
-              <span className="text-[8px] font-mono px-1.5 py-0.2 rounded bg-[#212631] text-[#E5A93C] border border-[#30363D]">
-                Real-time
-              </span>
-            </div>
+          {/* Dynamic Aggregated Attributes (Real-time Tag Heritage from Linked Videos) - Collapsible Accordion */}
+          <div className="mt-2.5 w-full rounded-md bg-[#111319] border border-[#30363D]/70 text-left overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setIsAtributTerkaitOpen(!isAtributTerkaitOpen)}
+              className="w-full flex items-center justify-between p-2.5 bg-[#181B22]/60 hover:bg-[#212631] transition cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-1.5">
+                <Tags className="w-3.5 h-3.5 text-[#E5A93C]" />
+                <span className="text-[9px] uppercase tracking-wider text-[#8B949E] font-mono font-bold">
+                  Atribut Terkait (Warisan Video)
+                </span>
+                <span className="text-[8px] font-mono px-1.5 py-0.2 rounded bg-[#212631] text-[#E5A93C] border border-[#30363D] ml-1">
+                  Real-time
+                </span>
+              </div>
+              <div className="flex items-center gap-1 text-[#8B949E] text-xs font-mono">
+                <span>{isAtributTerkaitOpen ? 'Tutup' : 'Buka'}</span>
+                {isAtributTerkaitOpen ? (
+                  <ChevronUp className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                )}
+              </div>
+            </button>
 
-            {dynamicAggregatedAttributes.length === 0 ? (
-              <p className="text-[10px] font-mono text-[#57606A] italic">
-                {linkedVideos.length === 0
-                  ? 'Belum ada video tertaut untuk akumulasi atribut.'
-                  : 'Video tertaut belum memilih opsi tag/kategori.'}
-              </p>
-            ) : (
-              <div className="space-y-1.5">
-                {dynamicAggregatedAttributes.map((group) => (
-                  <div key={group.fieldId} className="space-y-1">
-                    <span className="text-[9px] font-mono text-[#8B949E] uppercase">
-                      {group.fieldLabel}:
-                    </span>
-                    <div className="flex flex-wrap gap-1">
-                      {group.values.map((val) => {
-                        const rankDetail = getArtistTagRankDetail(
-                          artist.id,
-                          group.fieldId,
-                          val,
-                          effectiveArtists,
-                          effectiveVideos,
-                          effectivePivots
-                        );
-                        const rank = rankDetail ? rankDetail.rank : null;
-                        const total = rankDetail ? rankDetail.total : null;
-                        return (
-                          <button
-                            key={val}
-                            type="button"
-                            onClick={() => onSelectFilterTag?.(group.fieldId, val)}
-                            className="px-2 py-0.5 rounded text-[10px] font-mono bg-[#181B22] hover:bg-[#212631] border border-[#30363D] hover:border-[#E5A93C]/50 text-[#F0F6FC] transition flex items-center gap-1 active:scale-95 cursor-pointer"
-                          >
-                            <Trophy className="w-2.5 h-2.5 text-[#E5A93C]" />
-                            <span>{val}</span>
-                            <span className="text-[9px] text-[#E5A93C] bg-[#212631] px-1 rounded border border-[#30363D]">
-                              {rank
-                                ? `#${rank}${total && total > 1 ? `/${total}` : ''}`
-                                : '➔'}
-                            </span>
-                          </button>
-                        );
-                      })}
+            {isAtributTerkaitOpen && (
+              <div className="p-2.5 pt-1.5 border-t border-[#30363D]/50 space-y-2 animate-in fade-in">
+                {dynamicAggregatedAttributes.length === 0 ? (
+                  <p className="text-[10px] font-mono text-[#57606A] italic">
+                    {linkedVideos.length === 0
+                      ? 'Belum ada video tertaut untuk akumulasi atribut.'
+                      : 'Video tertaut belum memilih opsi tag/kategori.'}
+                  </p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {dynamicAggregatedAttributes.map((group) => (
+                      <div key={group.fieldId} className="space-y-1">
+                        <span className="text-[9px] font-mono text-[#8B949E] uppercase">
+                          {group.fieldLabel}:
+                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {group.values.map((val) => {
+                            const rankDetail = getArtistTagRankDetail(
+                              artist.id,
+                              group.fieldId,
+                              val,
+                              effectiveArtists,
+                              effectiveVideos,
+                              effectivePivots
+                            );
+                            const rank = rankDetail ? rankDetail.rank : null;
+                            const total = rankDetail ? rankDetail.total : null;
+                            return (
+                              <button
+                                key={val}
+                                type="button"
+                                onClick={() => onSelectFilterTag?.(group.fieldId, val)}
+                                className="px-2 py-0.5 rounded text-[10px] font-mono bg-[#181B22] hover:bg-[#212631] border border-[#30363D] hover:border-[#E5A93C]/50 text-[#F0F6FC] transition flex items-center gap-1 active:scale-95 cursor-pointer"
+                              >
+                                <Trophy className="w-2.5 h-2.5 text-[#E5A93C]" />
+                                <span>{val}</span>
+                                <span className="text-[9px] text-[#E5A93C] bg-[#212631] px-1 rounded border border-[#30363D]">
+                                  {rank
+                                    ? `#${rank}${total && total > 1 ? `/${total}` : ''}`
+                                    : '➔'}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* SEKSI BARU: TREN PERFORMA ARTIS - Collapsible Accordion */}
+          <div className="mt-2.5 w-full rounded-md bg-[#111319] border border-[#30363D]/70 text-left overflow-hidden font-mono">
+            <button
+              type="button"
+              onClick={() => setIsTrenPerformaOpen(!isTrenPerformaOpen)}
+              className="w-full flex items-center justify-between p-2.5 bg-[#181B22]/60 hover:bg-[#212631] transition cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-[#E5A93C]" />
+                <span className="text-[10px] uppercase tracking-wider text-[#8B949E] font-bold">
+                  Tren Performa Artis
+                </span>
+                <span className="text-[8px] px-1.5 py-0.2 rounded bg-[#212631] text-[#E5A93C] border border-[#30363D] ml-1">
+                  Kronologis
+                </span>
+              </div>
+              <div className="flex items-center gap-1 text-[#8B949E] text-xs font-mono">
+                <span>{isTrenPerformaOpen ? 'Tutup' : 'Buka'}</span>
+                {isTrenPerformaOpen ? (
+                  <ChevronUp className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                )}
+              </div>
+            </button>
+
+            {isTrenPerformaOpen && (
+              <div className="p-3 pt-2 border-t border-[#30363D]/50 space-y-3 animate-in fade-in">
+                {(() => {
+              // Get chronological list of video performance scores
+              const chronologicalEntries = [...linkedVideos]
+                .sort((a, b) => new Date(a.releaseDate || a.createdAt).getTime() - new Date(b.releaseDate || b.createdAt).getTime())
+                .map((vid) => {
+                  const scoreInfo = videoScores?.find((vs) => vs.videoId === vid.id);
+                  const performance = scoreInfo?.performance ?? scoreInfo?.weight ?? 100;
+                  const obtained = scoreInfo?.scoreObtained ?? vid.overallRating;
+                  return {
+                    id: vid.id,
+                    title: vid.title,
+                    date: vid.releaseDate || vid.createdAt.slice(0, 10),
+                    performance,
+                    obtained,
+                  };
+                });
+
+              if (chronologicalEntries.length === 0) {
+                return (
+                  <p className="text-[10px] text-[#57606A] italic">
+                    Belum ada entri video tertaut untuk menggambarkan tren performa.
+                  </p>
+                );
+              }
+
+              const scores = chronologicalEntries.map((e) => e.obtained);
+              const avgScore = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10;
+              const maxScore = Math.max(...scores);
+              const minScore = Math.min(...scores);
+
+              // Calculate trend badge compared to previous entry
+              const lastScore = scores[scores.length - 1];
+              const prevScore = scores.length > 1 ? scores[scores.length - 2] : lastScore;
+              const diff = Math.round((lastScore - prevScore) * 10) / 10;
+              const isUp = diff >= 0;
+
+              // Sparkline SVG Coordinates calculation
+              const width = 300;
+              const height = 60;
+              const padding = 10;
+              const minVal = Math.min(0, Math.min(...scores) - 10);
+              const maxVal = Math.max(100, Math.max(...scores) + 5);
+
+              const points = chronologicalEntries.map((entry, idx) => {
+                const x =
+                  chronologicalEntries.length === 1
+                    ? width / 2
+                    : padding + (idx / (chronologicalEntries.length - 1)) * (width - padding * 2);
+                const y = height - padding - ((entry.obtained - minVal) / (maxVal - minVal)) * (height - padding * 2);
+                return { x, y, val: entry.obtained, title: entry.title };
+              });
+
+              const pathD =
+                points.length === 1
+                  ? `M ${points[0].x - 20} ${points[0].y} L ${points[0].x + 20} ${points[0].y}`
+                  : points.reduce((acc, p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`), '');
+
+              return (
+                <div className="space-y-3">
+                  {/* Summary Cards Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                    <div className="p-2 rounded bg-[#181B22] border border-[#30363D]">
+                      <span className="text-[8px] uppercase text-[#8B949E] block">Rata-Rata</span>
+                      <span className="text-xs font-bold text-[#E5A93C]">{avgScore}</span>
+                    </div>
+                    <div className="p-2 rounded bg-[#181B22] border border-[#30363D]">
+                      <span className="text-[8px] uppercase text-[#8B949E] block">Tertinggi</span>
+                      <span className="text-xs font-bold text-emerald-400">{maxScore}</span>
+                    </div>
+                    <div className="p-2 rounded bg-[#181B22] border border-[#30363D]">
+                      <span className="text-[8px] uppercase text-[#8B949E] block">Terendah</span>
+                      <span className="text-xs font-bold text-rose-400">{minScore}</span>
+                    </div>
+                    <div className="p-2 rounded bg-[#181B22] border border-[#30363D]">
+                      <span className="text-[8px] uppercase text-[#8B949E] block">Indikator Tren</span>
+                      <div className="flex items-center justify-center gap-0.5 mt-0.5">
+                        <span
+                          className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${
+                            isUp
+                              ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/80'
+                              : 'bg-rose-950/60 text-rose-400 border-rose-800/80'
+                          }`}
+                        >
+                          {isUp ? `▲ +${diff}` : `▼ ${diff}`}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                ))}
+
+                  {/* Line Chart / Sparkline Graph */}
+                  <div className="p-2.5 rounded bg-[#181B22] border border-[#30363D] space-y-1.5">
+                    <span className="text-[9px] text-[#8B949E] block">
+                      Grafik Dinamika Performa ({chronologicalEntries.length} Karya)
+                    </span>
+                    <div className="w-full overflow-x-auto">
+                      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-16 overflow-visible">
+                        {/* Background Grid Lines */}
+                        <line x1="0" y1={height / 2} x2={width} y2={height / 2} stroke="#30363D" strokeDasharray="2 2" strokeWidth="0.5" />
+                        {/* Sparkline Path */}
+                        <path d={pathD} fill="none" stroke="#E5A93C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        {/* Sparkline Data Points */}
+                        {points.map((p, i) => (
+                          <g key={i} className="group/pt cursor-pointer">
+                            <circle cx={p.x} cy={p.y} r="3" fill="#111319" stroke="#E5A93C" strokeWidth="2" />
+                            <title>{`${p.title}: ${p.val}`}</title>
+                          </g>
+                        ))}
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
               </div>
             )}
           </div>

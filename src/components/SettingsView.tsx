@@ -1988,7 +1988,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   onChange={(e) => setArtistFieldType(e.target.value as FieldType)}
                   className="w-full py-1.5 px-2.5 rounded bg-[#111319] border border-[#30363D] text-[#F0F6FC] text-xs focus:outline-none focus:border-[#E5A93C]"
                 >
-                  <option value="custom_text">Text (Teks Kustom)</option>
+                  <option value="custom_text">Text (Teks Kustom Biasa)</option>
+                  <option value="text_dynamic_filter">Field Text (Support Dynamic Filtering)</option>
                   <option value="number">Number (Angka - Support Dynamic Filtering)</option>
                   <option value="button_link">Button/Link (Tombol Tautan)</option>
                 </select>
