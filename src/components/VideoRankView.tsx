@@ -68,12 +68,12 @@ export const VideoRankView: React.FC<VideoRankViewProps> = ({
     return Array.from(roleMap.entries()).map(([role, count]) => ({ role, count }));
   }, [videos]);
 
-  // Extract any dynamic options present in data
+  // Extract any dynamic options present in data (including artist custom fields)
   const dynamicOptionsByField = useMemo(() => {
     const map: Record<string, string[]> = {};
     for (const field of fieldDefinitions) {
+      const set = new Set<string>();
       if (field.type === 'single_choice' || field.type === 'multi_choice') {
-        const set = new Set<string>();
         for (const vid of videos) {
           if (field.type === 'single_choice') {
             const v = vid.singleChoices?.[field.id];
@@ -87,11 +87,23 @@ export const VideoRankView: React.FC<VideoRankViewProps> = ({
             }
           }
         }
+      } else if (field.type === 'text_dynamic_filter' || field.type === 'number') {
+        for (const art of artists) {
+          if (field.type === 'text_dynamic_filter') {
+            const val = art.textFields?.[field.label] || art.textFields?.[field.key];
+            if (val && typeof val === 'string' && val.trim()) set.add(val.trim());
+          } else if (field.type === 'number') {
+            const num = art.numberFields?.[field.label] ?? art.numberFields?.[field.key];
+            if (num !== undefined && num !== null) set.add(String(num));
+          }
+        }
+      }
+      if (set.size > 0) {
         map[field.id] = Array.from(set);
       }
     }
     return map;
-  }, [fieldDefinitions, videos]);
+  }, [fieldDefinitions, videos, artists]);
 
   // Filter and sort videos
   const rankedVideos = useMemo(() => {
@@ -115,7 +127,19 @@ export const VideoRankView: React.FC<VideoRankViewProps> = ({
         // Dynamic Quick Tab & Chip Filter (Feature 1)
         if (activeFieldId && selectedOption) {
           const fieldDef = fieldDefinitions.find((f) => f.id === activeFieldId);
-          if (fieldDef?.type === 'single_choice') {
+          if (fieldDef?.type === 'text_dynamic_filter' || fieldDef?.type === 'number') {
+            const linkedArtists = artists.filter((a) => video.artistIds?.includes(a.id));
+            const matchesArtist = linkedArtists.some((art) => {
+              if (fieldDef.type === 'text_dynamic_filter') {
+                const val = art.textFields?.[fieldDef.label] || art.textFields?.[fieldDef.key];
+                return val === selectedOption;
+              } else {
+                const num = art.numberFields?.[fieldDef.label] ?? art.numberFields?.[fieldDef.key];
+                return String(num) === selectedOption;
+              }
+            });
+            if (!matchesArtist) return false;
+          } else if (fieldDef?.type === 'single_choice') {
             if (video.singleChoices?.[activeFieldId] !== selectedOption) {
               return false;
             }

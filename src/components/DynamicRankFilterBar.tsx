@@ -20,10 +20,16 @@ export const DynamicRankFilterBar: React.FC<DynamicRankFilterBarProps> = ({
   onSelectOption,
   dynamicOptionsByField = {},
 }) => {
-  // Extract all single_choice and multi_choice fields created/managed in Settings
+  // Extract all single_choice, multi_choice, text_dynamic_filter, and number fields created/managed in Settings
   const choiceFields = React.useMemo(() => {
     return fieldDefinitions
-      .filter((f) => f.type === 'single_choice' || f.type === 'multi_choice')
+      .filter(
+        (f) =>
+          f.type === 'single_choice' ||
+          f.type === 'multi_choice' ||
+          f.type === 'text_dynamic_filter' ||
+          f.type === 'number'
+      )
       .sort((a, b) => a.order - b.order);
   }, [fieldDefinitions]);
 

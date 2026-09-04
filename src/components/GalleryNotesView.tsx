@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react';
 import { GalleryNote, Artist, NoteBlock } from '../types';
+import { MultiImageBlockRenderer } from './MultiImageBlockComponents';
 import {
   getStoredGalleryNotes,
   saveGalleryNotes,
@@ -351,29 +352,8 @@ export const GalleryNotesView: React.FC<GalleryNotesViewProps> = ({
                 );
               }
               if (block.type === 'image') {
-                return (
-                  <div
-                    key={block.id}
-                    className="rounded-md overflow-hidden bg-[#0F1117] border border-[#30363D] my-2"
-                  >
-                    {block.content ? (
-                      <img
-                        src={block.content}
-                        alt="Galeri Catatan"
-                        referrerPolicy="no-referrer"
-                        className="w-full h-auto max-h-[520px] object-contain mx-auto"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            'https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=800&auto=format&fit=crop&q=80';
-                        }}
-                      />
-                    ) : (
-                      <div className="p-6 text-center text-xs font-mono text-[#57606A]">
-                        [Gambar kosong]
-                      </div>
-                    )}
-                  </div>
-                );
+                const imgs = block.images && block.images.length > 0 ? block.images : (block.content ? [block.content] : []);
+                return <MultiImageBlockRenderer key={block.id} images={imgs} />;
               }
               if (block.type === 'quote') {
                 return (

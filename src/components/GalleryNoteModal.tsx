@@ -25,6 +25,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { GalleryNote, NoteBlock, Artist } from '../types';
+import { ImageBlockEditor, MultiImageBlockRenderer } from './MultiImageBlockComponents';
 
 interface GalleryNoteModalProps {
   isOpen: boolean;
@@ -113,18 +114,53 @@ export const GalleryNoteModal: React.FC<GalleryNoteModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Local File Upload Handler -> Base64
+  // Local File Upload Handler -> Base64 (Supports multiple files)
   const handleFileUpload = (blockId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      updateBlockContent(blockId, base64);
-    };
-    reader.readAsDataURL(file);
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        if (base64) {
+          handleAddImageUrlToBlock(blockId, base64);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
     e.target.value = '';
+  };
+
+  const handleAddImageUrlToBlock = (blockId: string, url: string) => {
+    if (!url.trim()) return;
+    setBlocks((prev) =>
+      prev.map((b) => {
+        if (b.id !== blockId) return b;
+        const existingImages = b.images || (b.content ? [b.content] : []);
+        const updatedImages = [...existingImages, url.trim()];
+        return {
+          ...b,
+          content: updatedImages[0] || '',
+          images: updatedImages,
+        };
+      })
+    );
+  };
+
+  const handleRemoveImageFromBlock = (blockId: string, imgIdx: number) => {
+    setBlocks((prev) =>
+      prev.map((b) => {
+        if (b.id !== blockId) return b;
+        const existingImages = b.images || (b.content ? [b.content] : []);
+        const updatedImages = existingImages.filter((_, idx) => idx !== imgIdx);
+        return {
+          ...b,
+          content: updatedImages[0] || '',
+          images: updatedImages,
+        };
+      })
+    );
   };
 
   // Add new block
@@ -351,25 +387,8 @@ export const GalleryNoteModal: React.FC<GalleryNoteModalProps> = ({
                   );
                 }
                 if (block.type === 'image') {
-                  return (
-                    <div
-                      key={block.id}
-                      className="rounded-md overflow-hidden bg-[#0F1117] border border-[#30363D] my-2"
-                    >
-                      {block.content ? (
-                        <img
-                          src={block.content}
-                          alt=""
-                          referrerPolicy="no-referrer"
-                          className="w-full h-auto max-h-[440px] object-contain mx-auto"
-                        />
-                      ) : (
-                        <div className="p-4 text-center text-xs font-mono text-[#57606A]">
-                          [Gambar belum diunggah]
-                        </div>
-                      )}
-                    </div>
-                  );
+                  const imgs = block.images && block.images.length > 0 ? block.images : (block.content ? [block.content] : []);
+                  return <MultiImageBlockRenderer key={block.id} images={imgs} />;
                 }
                 if (block.type === 'quote') {
                   return (
@@ -568,44 +587,13 @@ export const GalleryNoteModal: React.FC<GalleryNoteModalProps> = ({
                       } ${block.italic ? 'italic' : ''}`}
                     />
                   ) : block.type === 'image' ? (
-                    <div className="space-y-1.5">
-                      <div className="flex gap-1.5">
-                        <input
-                          type="text"
-                          value={block.content.startsWith('data:') ? '[Gambar Berkas Terunggah]' : block.content}
-                          onChange={(e) => updateBlockContent(block.id, e.target.value)}
-                          placeholder="Masukkan URL gambar atau unggah berkas..."
-                          className="flex-1 px-2.5 py-1.5 rounded bg-[#111319] border border-[#30363D] text-[#F0F6FC] text-xs focus:outline-none focus:border-[#E5A93C]"
-                        />
-                        <label className="px-2.5 py-1.5 rounded bg-[#212631] hover:bg-[#2A303C] text-[#F0F6FC] border border-[#30363D] text-xs font-mono cursor-pointer flex items-center gap-1 shrink-0 transition active:scale-98">
-                          <Upload className="w-3 h-3 text-[#E5A93C]" />
-                          <span>Unggah</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => handleFileUpload(block.id, e)}
-                          />
-                        </label>
-                      </div>
-
-                      {block.content && (
-                        <div className="relative rounded bg-[#0F1117] border border-[#30363D] overflow-hidden max-h-40 flex items-center justify-center group/img">
-                          <img
-                            src={block.content}
-                            alt="Preview"
-                            className="max-h-40 w-auto object-contain"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => updateBlockContent(block.id, '')}
-                            className="absolute top-1.5 right-1.5 p-1 rounded bg-black/70 hover:bg-rose-950 text-rose-300 text-xs transition"
-                            title="Hapus Gambar"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      )}
+                    <div className="space-y-2">
+                      <ImageBlockEditor
+                        block={block}
+                        onAddUrl={(url) => handleAddImageUrlToBlock(block.id, url)}
+                        onFileUpload={(e) => handleFileUpload(block.id, e)}
+                        onRemoveImg={(idx) => handleRemoveImageFromBlock(block.id, idx)}
+                      />
                     </div>
                   ) : block.type === 'quote' ? (
                     <div className="flex items-start gap-1.5">

@@ -592,6 +592,133 @@ export const ArtistDetailView: React.FC<ArtistDetailViewProps> = ({
               </div>
             )}
           </div>
+
+          {/* SEKSI BARU: TREN PERFORMA ARTIS */}
+          <div className="mt-2.5 p-3 w-full rounded-md bg-[#111319] border border-[#30363D]/70 text-left space-y-3 font-mono">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-wider text-[#8B949E] font-bold flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-[#E5A93C]" />
+                <span>Tren Performa Artis</span>
+              </span>
+              <span className="text-[8px] px-1.5 py-0.2 rounded bg-[#212631] text-[#E5A93C] border border-[#30363D]">
+                Kronologis
+              </span>
+            </div>
+
+            {(() => {
+              // Get chronological list of video performance scores
+              const chronologicalEntries = [...linkedVideos]
+                .sort((a, b) => new Date(a.releaseDate || a.createdAt).getTime() - new Date(b.releaseDate || b.createdAt).getTime())
+                .map((vid) => {
+                  const scoreInfo = videoScores?.find((vs) => vs.videoId === vid.id);
+                  const performance = scoreInfo?.performance ?? scoreInfo?.weight ?? 100;
+                  const obtained = scoreInfo?.scoreObtained ?? vid.overallRating;
+                  return {
+                    id: vid.id,
+                    title: vid.title,
+                    date: vid.releaseDate || vid.createdAt.slice(0, 10),
+                    performance,
+                    obtained,
+                  };
+                });
+
+              if (chronologicalEntries.length === 0) {
+                return (
+                  <p className="text-[10px] text-[#57606A] italic">
+                    Belum ada entri video tertaut untuk menggambarkan tren performa.
+                  </p>
+                );
+              }
+
+              const scores = chronologicalEntries.map((e) => e.obtained);
+              const avgScore = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10;
+              const maxScore = Math.max(...scores);
+              const minScore = Math.min(...scores);
+
+              // Calculate trend badge compared to previous entry
+              const lastScore = scores[scores.length - 1];
+              const prevScore = scores.length > 1 ? scores[scores.length - 2] : lastScore;
+              const diff = Math.round((lastScore - prevScore) * 10) / 10;
+              const isUp = diff >= 0;
+
+              // Sparkline SVG Coordinates calculation
+              const width = 300;
+              const height = 60;
+              const padding = 10;
+              const minVal = Math.min(0, Math.min(...scores) - 10);
+              const maxVal = Math.max(100, Math.max(...scores) + 5);
+
+              const points = chronologicalEntries.map((entry, idx) => {
+                const x =
+                  chronologicalEntries.length === 1
+                    ? width / 2
+                    : padding + (idx / (chronologicalEntries.length - 1)) * (width - padding * 2);
+                const y = height - padding - ((entry.obtained - minVal) / (maxVal - minVal)) * (height - padding * 2);
+                return { x, y, val: entry.obtained, title: entry.title };
+              });
+
+              const pathD =
+                points.length === 1
+                  ? `M ${points[0].x - 20} ${points[0].y} L ${points[0].x + 20} ${points[0].y}`
+                  : points.reduce((acc, p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`), '');
+
+              return (
+                <div className="space-y-3">
+                  {/* Summary Cards Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                    <div className="p-2 rounded bg-[#181B22] border border-[#30363D]">
+                      <span className="text-[8px] uppercase text-[#8B949E] block">Rata-Rata</span>
+                      <span className="text-xs font-bold text-[#E5A93C]">{avgScore}</span>
+                    </div>
+                    <div className="p-2 rounded bg-[#181B22] border border-[#30363D]">
+                      <span className="text-[8px] uppercase text-[#8B949E] block">Tertinggi</span>
+                      <span className="text-xs font-bold text-emerald-400">{maxScore}</span>
+                    </div>
+                    <div className="p-2 rounded bg-[#181B22] border border-[#30363D]">
+                      <span className="text-[8px] uppercase text-[#8B949E] block">Terendah</span>
+                      <span className="text-xs font-bold text-rose-400">{minScore}</span>
+                    </div>
+                    <div className="p-2 rounded bg-[#181B22] border border-[#30363D]">
+                      <span className="text-[8px] uppercase text-[#8B949E] block">Indikator Tren</span>
+                      <div className="flex items-center justify-center gap-0.5 mt-0.5">
+                        <span
+                          className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${
+                            isUp
+                              ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/80'
+                              : 'bg-rose-950/60 text-rose-400 border-rose-800/80'
+                          }`}
+                        >
+                          {isUp ? `▲ +${diff}` : `▼ ${diff}`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Line Chart / Sparkline Graph */}
+                  <div className="p-2.5 rounded bg-[#181B22] border border-[#30363D] space-y-1.5">
+                    <span className="text-[9px] text-[#8B949E] block">
+                      Grafik Dinamika Performa ({chronologicalEntries.length} Karya)
+                    </span>
+                    <div className="w-full overflow-x-auto">
+                      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-16 overflow-visible">
+                        {/* Background Grid Lines */}
+                        <line x1="0" y1={height / 2} x2={width} y2={height / 2} stroke="#30363D" strokeDasharray="2 2" strokeWidth="0.5" />
+                        {/* Sparkline Path */}
+                        <path d={pathD} fill="none" stroke="#E5A93C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        {/* Sparkline Data Points */}
+                        {points.map((p, i) => (
+                          <g key={i} className="group/pt cursor-pointer">
+                            <circle cx={p.x} cy={p.y} r="3" fill="#111319" stroke="#E5A93C" strokeWidth="2" />
+                            <title>{`${p.title}: ${p.val}`}</title>
+                          </g>
+                        ))}
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
         </div>
       </div>
 
