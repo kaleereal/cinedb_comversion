@@ -1,6 +1,7 @@
 import React from 'react';
 import { Layers, Tag, Check, Sparkles } from 'lucide-react';
 import { CustomFieldDefinition } from '../types';
+import { formatNumberWithAffixes } from '../utils/dynamicFilterSchema';
 
 interface DynamicRankFilterBarProps {
   fieldDefinitions: CustomFieldDefinition[];
@@ -8,7 +9,7 @@ interface DynamicRankFilterBarProps {
   onSelectField: (fieldId: string | null) => void;
   selectedOption: string | null;
   onSelectOption: (option: string | null) => void;
-  /** Optional custom extra options discovered from data */
+  /** Optional custom extra options discovered from active data */
   dynamicOptionsByField?: Record<string, string[]>;
 }
 
@@ -20,18 +21,31 @@ export const DynamicRankFilterBar: React.FC<DynamicRankFilterBarProps> = ({
   onSelectOption,
   dynamicOptionsByField = {},
 }) => {
-  // Extract all single_choice, multi_choice, text_dynamic_filter, and number fields created/managed in Settings
+  // Extract all supported dynamic filter fields (single_choice, multi_choice, text_dynamic_filter, custom_text, text, number)
+  // AUTO-PRUNING: If dynamicOptionsByField is provided, prune/hide tabs that have 0 active records
   const choiceFields = React.useMemo(() => {
     return fieldDefinitions
-      .filter(
-        (f) =>
+      .filter((f) => {
+        const isSupportedType =
           f.type === 'single_choice' ||
           f.type === 'multi_choice' ||
           f.type === 'text_dynamic_filter' ||
-          f.type === 'number'
-      )
+          f.type === 'custom_text' ||
+          f.type === 'text' ||
+          f.type === 'number';
+
+        if (!isSupportedType) return false;
+
+        // Auto-pruning: If dynamicOptionsByField is available, ensure field has at least 1 active option
+        if (dynamicOptionsByField && Object.keys(dynamicOptionsByField).length > 0) {
+          const opts = dynamicOptionsByField[f.id];
+          return Array.isArray(opts) && opts.length > 0;
+        }
+
+        return true;
+      })
       .sort((a, b) => a.order - b.order);
-  }, [fieldDefinitions]);
+  }, [fieldDefinitions, dynamicOptionsByField]);
 
   // Current active field object (if a specific field tab is selected)
   const currentField = React.useMemo(() => {
@@ -39,15 +53,26 @@ export const DynamicRankFilterBar: React.FC<DynamicRankFilterBarProps> = ({
     return choiceFields.find((f) => f.id === activeFieldId) || null;
   }, [choiceFields, activeFieldId]);
 
-  // Items/Options available for current active field (options from field config + discovered data)
+  // Items/Options available for current active field:
+  // Render active options discovered from data records (auto-pruning unpopulated options)
   const currentOptions = React.useMemo(() => {
     if (!currentField) return [];
+    if (dynamicOptionsByField && dynamicOptionsByField[currentField.id]) {
+      return dynamicOptionsByField[currentField.id];
+    }
     const configuredOptions = currentField.options || [];
-    const discovered = dynamicOptionsByField[currentField.id] || [];
-    // Combine and deduplicate
-    const combined = Array.from(new Set([...configuredOptions, ...discovered]));
-    return combined.filter((opt) => opt && opt.trim().length > 0);
+    return configuredOptions.filter((opt) => opt && opt.trim().length > 0);
   }, [currentField, dynamicOptionsByField]);
+
+  // Auto-pruning cleanup: reset filter states reactively if the active field or option was pruned
+  React.useEffect(() => {
+    if (activeFieldId && !choiceFields.some((f) => f.id === activeFieldId)) {
+      onSelectField(null);
+      onSelectOption(null);
+    } else if (activeFieldId && selectedOption && !currentOptions.includes(selectedOption)) {
+      onSelectOption(null);
+    }
+  }, [activeFieldId, selectedOption, choiceFields, currentOptions, onSelectField, onSelectOption]);
 
   return (
     <div className="sticky top-0 z-20 bg-[#0D1117]/95 backdrop-blur-xs pb-2 -mx-4 px-4 pt-1 border-b border-[#30363D] space-y-1.5 font-mono">
@@ -70,10 +95,10 @@ export const DynamicRankFilterBar: React.FC<DynamicRankFilterBarProps> = ({
           <span>Semua</span>
         </button>
 
-        {/* Dynamic Tabs from Settings Fields */}
+        {/* Dynamic Tabs from Settings Fields (Auto-pruned when empty/null) */}
         {choiceFields.map((field) => {
           const isActive = activeFieldId === field.id;
-          const optionsCount = (field.options || []).length;
+          const optionsCount = dynamicOptionsByField[field.id]?.length ?? (field.options || []).length;
 
           return (
             <button
@@ -126,9 +151,13 @@ export const DynamicRankFilterBar: React.FC<DynamicRankFilterBarProps> = ({
             <span>Semua {currentField.label}</span>
           </button>
 
-          {/* Value Chips */}
+          {/* Value Chips (Auto-pruned to only render options with active data) */}
           {currentOptions.map((opt) => {
             const isChipActive = selectedOption === opt;
+            const displayLabel =
+              currentField.type === 'number'
+                ? formatNumberWithAffixes(opt, currentField.prefix, currentField.suffix)
+                : opt;
 
             return (
               <button
@@ -142,7 +171,7 @@ export const DynamicRankFilterBar: React.FC<DynamicRankFilterBarProps> = ({
                 }`}
               >
                 {isChipActive && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                <span>{opt}</span>
+                <span>{displayLabel}</span>
               </button>
             );
           })}

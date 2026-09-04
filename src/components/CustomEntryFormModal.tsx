@@ -107,19 +107,39 @@ export const CustomEntryFormModal: React.FC<CustomEntryFormModalProps> = ({
                   className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               ) : field.type === 'number' ? (
-                <input
-                  type="number"
-                  required={field.is_required}
-                  value={fieldsData[field.id] ?? ''}
-                  onChange={(e) =>
-                    setFieldsData({
-                      ...fieldsData,
-                      [field.id]: e.target.value !== '' ? Number(e.target.value) : '',
-                    })
-                  }
-                  placeholder={field.description || '0'}
-                  className="w-full min-h-[44px] px-3.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
+                <div className="relative flex items-center">
+                  {field.prefix && (
+                    <span className="inline-flex items-center px-3 min-h-[44px] rounded-l-xl border border-r-0 border-slate-700 bg-slate-900 text-xs text-slate-400 font-mono select-none">
+                      {field.prefix}
+                    </span>
+                  )}
+                  <input
+                    type="number"
+                    required={field.is_required}
+                    value={fieldsData[field.id] ?? ''}
+                    onChange={(e) =>
+                      setFieldsData({
+                        ...fieldsData,
+                        [field.id]: e.target.value !== '' ? Number(e.target.value) : '',
+                      })
+                    }
+                    placeholder={field.description || '0'}
+                    className={`w-full min-h-[44px] px-3.5 bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono ${
+                      field.prefix && field.suffix
+                        ? 'rounded-none border-x-0'
+                        : field.prefix
+                        ? 'rounded-r-xl rounded-l-none'
+                        : field.suffix
+                        ? 'rounded-l-xl rounded-r-none'
+                        : 'rounded-xl'
+                    }`}
+                  />
+                  {field.suffix && (
+                    <span className="inline-flex items-center px-3 min-h-[44px] rounded-r-xl border border-l-0 border-slate-700 bg-slate-900 text-xs text-slate-400 font-mono select-none">
+                      {field.suffix}
+                    </span>
+                  )}
+                </div>
               ) : (
                 <input
                   type="text"

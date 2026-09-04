@@ -1589,16 +1589,25 @@ export function saveGalleryNotes(notes: GalleryNote[]) {
   }
 }
 
-// ARTIST CUSTOM FIELDS API ("Struktur & Urutan Field Artis")
+// ARTIST CUSTOM FIELDS API ("Struktur & Urutan Field Artis" - Form Layout Builder)
 export const DEFAULT_ARTIST_FIELDS: CustomFieldDefinition[] = [
   {
-    id: 'art_field_notes',
-    key: 'galleryNoteIds',
-    label: 'Field Galeri Catatan',
-    description: 'Menghubungkan entri artis ke halaman Catatan Gallery yang baru dibuat.',
-    type: 'gallery_notes',
+    id: 'art_field_name',
+    key: 'name',
+    label: 'Nama Artis',
+    description: 'Nama lengkap atau nama panggung artis (Field Wajib Entri).',
+    type: 'custom_text',
     order: 1,
-    isSystem: true, // TIDAK BISA dihapus
+    isSystem: true, // Non-deletable system field
+  },
+  {
+    id: 'art_field_peran_utama',
+    key: 'Peran Utama',
+    label: 'Peran / Profesi Utama',
+    description: 'Status peran atau profesi utama artis (Aktor, Sutradara, dll.) dengan dukungan Dynamic Filtering.',
+    type: 'custom_text',
+    order: 2,
+    isSystem: true, // Non-deletable system reserved field, supports Metadata Editing!
   },
   {
     id: 'art_field_birth',
@@ -1606,8 +1615,44 @@ export const DEFAULT_ARTIST_FIELDS: CustomFieldDefinition[] = [
     label: 'Field Bulan-Tahun Lahir',
     description: 'Mengatur tanggal/bulan-tahun lahir untuk kalkulasi Umur otomatis.',
     type: 'month_year',
-    order: 2,
-    isSystem: true, // TIDAK BISA dihapus
+    order: 3,
+    isSystem: true, // Non-deletable system field
+  },
+  {
+    id: 'art_field_photos',
+    key: 'photos',
+    label: 'Foto Profil & Foto Cover',
+    description: 'Unggah berkas atau masukkan tautan URL foto profil avatar dan cover latar artis.',
+    type: 'custom_text',
+    order: 4,
+    isSystem: true, // Non-deletable system field
+  },
+  {
+    id: 'art_field_bio',
+    key: 'bio',
+    label: 'Biografi / Catatan Ringkas',
+    description: 'Riwayat karier, deskripsi singkat, atau catatan portofolio artis.',
+    type: 'custom_text',
+    order: 5,
+    isSystem: true, // Non-deletable system field
+  },
+  {
+    id: 'art_field_notes',
+    key: 'galleryNoteIds',
+    label: 'Field Galeri Catatan',
+    description: 'Menghubungkan entri artis ke halaman Catatan Gallery yang baru dibuat.',
+    type: 'gallery_notes',
+    order: 6,
+    isSystem: true, // Non-deletable system field
+  },
+  {
+    id: 'art_field_embed_images',
+    key: 'embedImages',
+    label: 'Galeri Foto Artis (Embed)',
+    description: 'Koleksi galeri foto, poster, atau embed gambar tambahan portofolio artis.',
+    type: 'custom_text',
+    order: 7,
+    isSystem: true, // Non-deletable system field
   },
   {
     id: 'art_field_button',
@@ -1615,17 +1660,8 @@ export const DEFAULT_ARTIST_FIELDS: CustomFieldDefinition[] = [
     label: 'Field Tombol Link / Media Sosial',
     description: 'Tombol tautan portofolio, IMDb, Wikipedia, atau media sosial artis.',
     type: 'button_link',
-    order: 3,
-    isSystem: false, // Bisa dihapus / ditambah
-  },
-  {
-    id: 'art_field_peran_utama',
-    key: 'Peran Utama',
-    label: 'Peran / Profesi Utama',
-    description: 'Status peran utama artis (Aktor, Sutradara, dll.) dengan dukungan Dynamic Filtering.',
-    type: 'custom_text',
-    order: 4,
-    isSystem: false,
+    order: 8,
+    isSystem: false, // Bisa diedit / dihapus
   },
 ];
 
@@ -1637,7 +1673,42 @@ export function getStoredArtistFields(): CustomFieldDefinition[] {
       return DEFAULT_ARTIST_FIELDS;
     }
     const parsed: CustomFieldDefinition[] = JSON.parse(raw);
-    return parsed.sort((a, b) => a.order - b.order);
+
+    // Merge any missing default system fields from DEFAULT_ARTIST_FIELDS
+    const existingIds = new Set(parsed.map((f) => f.id));
+    const existingKeys = new Set(parsed.map((f) => f.key));
+
+    const merged = [...parsed];
+    let maxOrder = merged.reduce((max, f) => Math.max(max, f.order || 0), 0);
+
+    for (const def of DEFAULT_ARTIST_FIELDS) {
+      const hasDef = existingIds.has(def.id) || existingKeys.has(def.key);
+      if (!hasDef) {
+        maxOrder += 1;
+        merged.push({ ...def, order: maxOrder });
+      }
+    }
+
+    // System reserved keys and IDs that MUST be non-deletable (isSystem: true)
+    const SYSTEM_RESERVED_KEYS = ['Peran Utama', 'name', 'birthMonthYear', 'photos', 'bio', 'galleryNoteIds', 'embedImages'];
+    const SYSTEM_RESERVED_IDS = [
+      'art_field_peran_utama',
+      'art_field_name',
+      'art_field_birth',
+      'art_field_photos',
+      'art_field_bio',
+      'art_field_notes',
+      'art_field_embed_images',
+    ];
+
+    const result = merged.map((f) => {
+      if (SYSTEM_RESERVED_IDS.includes(f.id) || SYSTEM_RESERVED_KEYS.includes(f.key)) {
+        return { ...f, isSystem: true };
+      }
+      return f;
+    });
+
+    return result.sort((a, b) => a.order - b.order);
   } catch {
     return DEFAULT_ARTIST_FIELDS;
   }
@@ -1726,5 +1797,6 @@ export const loadCustomFields = getStoredFields;
 export const saveCustomFields = saveFields;
 export const loadRatingTemplates = getStoredRatingTemplates;
 export const saveCustomRatingTemplates = saveRatingTemplates;
+export const loadArtistFields = getStoredArtistFields;
 export const loadVideoViewMode = getVideoViewMode;
 export const saveStoredVideoViewMode = saveVideoViewMode;

@@ -135,6 +135,8 @@ export interface CustomFieldDefinition {
   defaultFolderNames?: string[]; // For rating_folder defaults
   maxEntries?: number;
   targetEntryTypeId?: string; // For Many-to-Many relation to other entry types
+  prefix?: string; // Input Affixes - Prefix (satuan di depan, e.g. "Rp", "$", "#")
+  suffix?: string; // Input Affixes - Suffix (satuan di belakang, e.g. "cm", "kg", "th")
 }
 
 export interface EntryTypeDefinition {

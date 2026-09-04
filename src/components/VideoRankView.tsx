@@ -4,11 +4,18 @@ import { Video, Artist, CustomFieldDefinition, FilterCriteria } from '../types';
 import { RatingBadge } from './RatingBadge';
 import { FilterBottomSheet } from './FilterBottomSheet';
 import { DynamicRankFilterBar } from './DynamicRankFilterBar';
+import { getStoredArtistFields } from '../utils/storage';
+import {
+  computeDynamicFilterSchemaForVideos,
+  matchVideoAgainstDynamicFilter,
+  useStorageRealtimeSync,
+} from '../utils/dynamicFilterSchema';
 
 interface VideoRankViewProps {
   videos: Video[];
   artists: Artist[];
   fieldDefinitions: CustomFieldDefinition[];
+  artistFieldDefinitions?: CustomFieldDefinition[];
   onSelectVideo?: (video: Video) => void;
   onSelectArtist?: (artistId: string) => void;
   initialFieldId?: string | null;
@@ -19,6 +26,7 @@ export const VideoRankView: React.FC<VideoRankViewProps> = ({
   videos,
   artists,
   fieldDefinitions,
+  artistFieldDefinitions,
   onSelectVideo,
   onSelectArtist,
   initialFieldId,
@@ -31,12 +39,16 @@ export const VideoRankView: React.FC<VideoRankViewProps> = ({
   const [activeFieldId, setActiveFieldId] = useState<string | null>(initialFieldId || null);
   const [selectedOption, setSelectedOption] = useState<string | null>(initialOption || null);
 
+  // Real-time reactive storage listener
+  const storageVersion = useStorageRealtimeSync();
+
   useEffect(() => {
     if (initialFieldId) {
       setActiveFieldId(initialFieldId);
       setSelectedOption(initialOption || null);
     }
   }, [initialFieldId, initialOption]);
+
   const [criteria, setCriteria] = useState<FilterCriteria>({
     searchQuery: '',
     sortOrder: 'desc',
@@ -45,7 +57,28 @@ export const VideoRankView: React.FC<VideoRankViewProps> = ({
     minRating: 0,
   });
 
-  // Extract unique artist roles from all videos
+  // Resolve artist custom fields from props or storage
+  const currentArtistFields = useMemo(() => {
+    if (artistFieldDefinitions && artistFieldDefinitions.length > 0) {
+      return artistFieldDefinitions;
+    }
+    return getStoredArtistFields();
+  }, [artistFieldDefinitions, storageVersion]);
+
+  // Dynamic Filtering Schema with Auto-Pruning for Video Rank:
+  // - Integrates custom Text & Number fields from "Struktur & Urutan Field Artis"
+  // - Maps field names as Tab Titles, values from linked artists/video data as Filter Options
+  // - Automatically prunes (hides) any field or option with null/empty records
+  const { activeFields, dynamicOptionsByField } = useMemo(() => {
+    return computeDynamicFilterSchemaForVideos(
+      videos,
+      artists,
+      fieldDefinitions,
+      currentArtistFields
+    );
+  }, [videos, artists, fieldDefinitions, currentArtistFields, storageVersion]);
+
+  // Extract unique artist roles from all videos for quick role filter
   const availableVideoRoles = useMemo(() => {
     const roleMap = new Map<string, number>();
     videos.forEach((v) => {
@@ -68,43 +101,6 @@ export const VideoRankView: React.FC<VideoRankViewProps> = ({
     return Array.from(roleMap.entries()).map(([role, count]) => ({ role, count }));
   }, [videos]);
 
-  // Extract any dynamic options present in data (including artist custom fields)
-  const dynamicOptionsByField = useMemo(() => {
-    const map: Record<string, string[]> = {};
-    for (const field of fieldDefinitions) {
-      const set = new Set<string>();
-      if (field.type === 'single_choice' || field.type === 'multi_choice') {
-        for (const vid of videos) {
-          if (field.type === 'single_choice') {
-            const v = vid.singleChoices?.[field.id];
-            if (v && typeof v === 'string' && v.trim()) set.add(v.trim());
-          } else {
-            const list = vid.multiChoices?.[field.id];
-            if (Array.isArray(list)) {
-              for (const item of list) {
-                if (item && typeof item === 'string' && item.trim()) set.add(item.trim());
-              }
-            }
-          }
-        }
-      } else if (field.type === 'text_dynamic_filter' || field.type === 'number') {
-        for (const art of artists) {
-          if (field.type === 'text_dynamic_filter') {
-            const val = art.textFields?.[field.label] || art.textFields?.[field.key];
-            if (val && typeof val === 'string' && val.trim()) set.add(val.trim());
-          } else if (field.type === 'number') {
-            const num = art.numberFields?.[field.label] ?? art.numberFields?.[field.key];
-            if (num !== undefined && num !== null) set.add(String(num));
-          }
-        }
-      }
-      if (set.size > 0) {
-        map[field.id] = Array.from(set);
-      }
-    }
-    return map;
-  }, [fieldDefinitions, videos, artists]);
-
   // Filter and sort videos
   const rankedVideos = useMemo(() => {
     return videos
@@ -124,31 +120,16 @@ export const VideoRankView: React.FC<VideoRankViewProps> = ({
           if (!hasMatchingRole) return false;
         }
 
-        // Dynamic Quick Tab & Chip Filter (Feature 1)
+        // Dynamic Quick Tab & Chip Filter (Feature 1) - matches video fields & linked artist fields
         if (activeFieldId && selectedOption) {
-          const fieldDef = fieldDefinitions.find((f) => f.id === activeFieldId);
-          if (fieldDef?.type === 'text_dynamic_filter' || fieldDef?.type === 'number') {
-            const linkedArtists = artists.filter((a) => video.artistIds?.includes(a.id));
-            const matchesArtist = linkedArtists.some((art) => {
-              if (fieldDef.type === 'text_dynamic_filter') {
-                const val = art.textFields?.[fieldDef.label] || art.textFields?.[fieldDef.key];
-                return val === selectedOption;
-              } else {
-                const num = art.numberFields?.[fieldDef.label] ?? art.numberFields?.[fieldDef.key];
-                return String(num) === selectedOption;
-              }
-            });
-            if (!matchesArtist) return false;
-          } else if (fieldDef?.type === 'single_choice') {
-            if (video.singleChoices?.[activeFieldId] !== selectedOption) {
-              return false;
-            }
-          } else if (fieldDef?.type === 'multi_choice') {
-            const tags = video.multiChoices?.[activeFieldId] || [];
-            if (!tags.includes(selectedOption)) {
-              return false;
-            }
-          }
+          const matched = matchVideoAgainstDynamicFilter(
+            video,
+            activeFieldId,
+            selectedOption,
+            activeFields,
+            artists
+          );
+          if (!matched) return false;
         }
 
         // Min rating filter
@@ -192,7 +173,17 @@ export const VideoRankView: React.FC<VideoRankViewProps> = ({
         const ratingB = b.overallRating || 0;
         return sortOrder === 'desc' ? ratingB - ratingA : ratingA - ratingB;
       });
-  }, [videos, criteria, sortOrder, sortCriterion, selectedRoleFilter, activeFieldId, selectedOption, fieldDefinitions, artists]);
+  }, [
+    videos,
+    criteria,
+    sortOrder,
+    sortCriterion,
+    selectedRoleFilter,
+    activeFieldId,
+    selectedOption,
+    activeFields,
+    artists,
+  ]);
 
   const multiChoiceCount = Object.values(criteria.multiChoices || {}).reduce<number>(
     (sum, list) => sum + (Array.isArray(list) ? list.length : 0),
@@ -241,9 +232,9 @@ export const VideoRankView: React.FC<VideoRankViewProps> = ({
         </button>
       </div>
 
-      {/* Dynamic Filtering Tabs & Chips */}
+      {/* Dynamic Filtering Tabs & Chips (with Auto-Pruning) */}
       <DynamicRankFilterBar
-        fieldDefinitions={fieldDefinitions}
+        fieldDefinitions={activeFields}
         activeFieldId={activeFieldId}
         onSelectField={setActiveFieldId}
         selectedOption={selectedOption}
@@ -299,21 +290,21 @@ export const VideoRankView: React.FC<VideoRankViewProps> = ({
             <button
               type="button"
               onClick={() => setSortCriterion('rating')}
-              className={`px-2 py-0.5 rounded text-[10px] transition cursor-pointer ${
+              className={`px-2 py-0.5 rounded text-[11px] transition cursor-pointer ${
                 sortCriterion === 'rating'
                   ? 'bg-[#212631] text-[#E5A93C] border border-[#30363D]'
-                  : 'bg-[#111319] text-[#8B949E] hover:text-[#F0F6FC]'
+                  : 'text-[#8B949E] hover:text-[#F0F6FC]'
               }`}
             >
-              Skor
+              Rating
             </button>
             <button
               type="button"
               onClick={() => setSortCriterion('title')}
-              className={`px-2 py-0.5 rounded text-[10px] transition cursor-pointer ${
+              className={`px-2 py-0.5 rounded text-[11px] transition cursor-pointer ${
                 sortCriterion === 'title'
                   ? 'bg-[#212631] text-[#E5A93C] border border-[#30363D]'
-                  : 'bg-[#111319] text-[#8B949E] hover:text-[#F0F6FC]'
+                  : 'text-[#8B949E] hover:text-[#F0F6FC]'
               }`}
             >
               Judul
@@ -321,10 +312,10 @@ export const VideoRankView: React.FC<VideoRankViewProps> = ({
             <button
               type="button"
               onClick={() => setSortCriterion('artist')}
-              className={`px-2 py-0.5 rounded text-[10px] transition cursor-pointer ${
+              className={`px-2 py-0.5 rounded text-[11px] transition cursor-pointer ${
                 sortCriterion === 'artist'
                   ? 'bg-[#212631] text-[#E5A93C] border border-[#30363D]'
-                  : 'bg-[#111319] text-[#8B949E] hover:text-[#F0F6FC]'
+                  : 'text-[#8B949E] hover:text-[#F0F6FC]'
               }`}
             >
               Artis
@@ -333,87 +324,112 @@ export const VideoRankView: React.FC<VideoRankViewProps> = ({
         </div>
 
         <button
-          onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
-          className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#111319] text-[#8B949E] hover:text-[#F0F6FC] text-[10px] border border-[#30363D] transition active:scale-95 cursor-pointer ml-auto"
+          type="button"
+          onClick={() => setSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))}
+          className="p-1 rounded hover:bg-[#212631] text-[#8B949E] hover:text-[#F0F6FC] transition flex items-center gap-1 text-[11px] cursor-pointer"
+          title={sortOrder === 'desc' ? 'Urutan: Tinggi ke Rendah' : 'Urutan: Rendah ke Tinggi'}
         >
-          <ArrowUpDown className="w-3 h-3 text-[#E5A93C]" />
-          <span>{sortOrder === 'desc' ? 'Tertinggi' : 'Terendah'}</span>
+          <ArrowUpDown className="w-3 h-3" />
+          <span>{sortOrder === 'desc' ? 'Turun' : 'Naik'}</span>
         </button>
       </div>
 
-      {/* Leaderboard List */}
+      {/* List / Leaderboard */}
       {rankedVideos.length === 0 ? (
-        <div className="text-center py-10 px-4 rounded-md bg-[#181B22] border border-[#30363D]">
-          <Film className="w-7 h-7 text-[#57606A] mx-auto mb-1.5" />
-          <p className="text-xs text-[#F0F6FC]">Tidak ada video yang cocok</p>
-          <p className="text-[10px] text-[#8B949E] mt-0.5">Coba sesuaikan atau reset filter kategori.</p>
+        <div className="text-center py-12 text-[#8B949E] text-xs">
+          Tidak ada video yang sesuai dengan kriteria filter.
         </div>
       ) : (
         <div className="space-y-1.5">
-          {rankedVideos.map((video, index) => {
-            const rank = index + 1;
-            const thumb =
-              video.metadata?.thumbnailUrl ||
-              'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800&auto=format&fit=crop&q=80';
+          {rankedVideos.map((video, idx) => {
+            const rank = idx + 1;
+            const primaryArtistId = video.artistIds?.[0];
+            const primaryArtist = artists.find((a) => a.id === primaryArtistId);
 
-            const videoArtists = artists.filter(
-              (a) => video.artistIds && video.artistIds.includes(a.id)
-            );
+            // Find artist role
+            let artistRoleDisplay = '';
+            if (video.artistRoles && primaryArtistId && video.artistRoles[primaryArtistId]) {
+              artistRoleDisplay = video.artistRoles[primaryArtistId];
+            } else if (primaryArtist?.textFields?.['Peran Utama']) {
+              artistRoleDisplay = primaryArtist.textFields['Peran Utama'];
+            }
 
             return (
               <div
                 key={video.id}
                 onClick={() => onSelectVideo && onSelectVideo(video)}
-                className="group flex items-center gap-2.5 p-2 rounded-md bg-[#181B22] border border-[#30363D] hover:border-[#30363D]/90 hover:bg-[#212631]/60 transition cursor-pointer"
+                className="flex items-center gap-2.5 p-2 rounded bg-[#111319] border border-[#30363D] hover:border-[#8B949E]/40 hover:bg-[#181B22] transition cursor-pointer group"
               >
-                {/* Nomor Peringkat */}
+                {/* Rank Position */}
                 <div
-                  className={`w-6 h-6 rounded flex items-center justify-center text-[10px] shrink-0 select-none ${getRankBadgeStyle(
+                  className={`w-6 h-6 rounded flex items-center justify-center text-xs shrink-0 ${getRankBadgeStyle(
                     rank
                   )}`}
                 >
-                  {rank}
+                  #{rank}
                 </div>
 
                 {/* Thumbnail */}
-                <div className="relative w-14 aspect-video rounded overflow-hidden bg-[#0F1117] shrink-0 border border-[#30363D]">
-                  <img
-                    src={thumb}
-                    alt={video.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        'https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=400&auto=format&fit=crop&q=80';
-                    }}
-                  />
+                <div className="w-14 h-9 rounded overflow-hidden bg-[#181B22] border border-[#30363D] shrink-0 relative">
+                  {video.thumbnailUrl ? (
+                    <img
+                      src={video.thumbnailUrl}
+                      alt={video.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[#8B949E]">
+                      <Film className="w-4 h-4" />
+                    </div>
+                  )}
+                  {video.url && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                      <Play className="w-3 h-3 text-white fill-white" />
+                    </div>
+                  )}
                 </div>
 
-                {/* Judul & Artis */}
+                {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-xs font-sans font-medium text-[#F0F6FC] truncate group-hover:text-[#E5A93C] transition">
+                  <h3 className="text-xs font-bold text-[#F0F6FC] truncate group-hover:text-[#E5A93C] transition">
                     {video.title}
-                  </h4>
-                  <div className="flex flex-wrap items-center gap-1 text-[10px] text-[#8B949E] mt-0.5 truncate font-mono">
-                    {videoArtists.length > 0 ? (
-                      videoArtists.map((a, i) => {
-                        const role = video.artistRoles?.[a.id] || a.textFields?.['Peran Utama'] || 'Artis Utama';
-                        return (
-                          <span key={a.id} className="truncate inline-flex items-center gap-0.5">
-                            <span className="text-[#C9D1D9]">{a.name}</span>
-                            <span className="text-[#E5A93C] text-[9px]">({role})</span>
-                            {i < videoArtists.length - 1 ? <span className="text-[#57606A] mr-0.5">,</span> : null}
-                          </span>
-                        );
-                      })
-                    ) : (
-                      <span>{video.metadata?.domain || 'Video'}</span>
+                  </h3>
+                  <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-[#8B949E]">
+                    {primaryArtist && (
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onSelectArtist) onSelectArtist(primaryArtist.id);
+                        }}
+                        className="text-[#E5A93C] hover:underline truncate cursor-pointer"
+                      >
+                        {primaryArtist.name}
+                      </span>
+                    )}
+                    {artistRoleDisplay && (
+                      <>
+                        <span>•</span>
+                        <span className="truncate">{artistRoleDisplay}</span>
+                      </>
                     )}
                   </div>
                 </div>
 
-                {/* Skor Rating */}
-                <div className="shrink-0 text-right">
-                  <RatingBadge score={video.overallRating} size="sm" />
+                {/* Rating Badge */}
+                <div className="shrink-0 flex items-center gap-2">
+                  <RatingBadge rating={video.overallRating || 0} size="sm" />
+                  {video.url && (
+                    <a
+                      href={video.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="p-1 rounded text-[#8B949E] hover:text-[#F0F6FC] hover:bg-[#212631] transition"
+                      title="Buka Tautan Video"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
                 </div>
               </div>
             );
@@ -421,13 +437,14 @@ export const VideoRankView: React.FC<VideoRankViewProps> = ({
         </div>
       )}
 
-      {/* Filter Bottom Sheet */}
+      {/* Bottom Sheet Filter */}
       <FilterBottomSheet
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
-        criteria={criteria}
-        onApply={(newCrit) => setCriteria(newCrit)}
         fieldDefinitions={fieldDefinitions}
+        criteria={criteria}
+        onChangeCriteria={setCriteria}
+        totalResults={rankedVideos.length}
       />
     </div>
   );

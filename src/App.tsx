@@ -13,6 +13,8 @@ import {
   saveArtists,
   loadCustomFields,
   saveCustomFields,
+  getStoredArtistFields,
+  subscribeStorage,
 } from './utils/storage';
 import { BottomNavigation } from './components/BottomNavigation';
 import { FAB } from './components/FAB';
@@ -36,6 +38,7 @@ export default function App() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [artists, setArtists] = useState<Artist[]>([]);
   const [fieldDefinitions, setFieldDefinitions] = useState<CustomFieldDefinition[]>([]);
+  const [artistFieldDefinitions, setArtistFieldDefinitions] = useState<CustomFieldDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Navigation state
@@ -99,16 +102,20 @@ export default function App() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // Initial Data Loading & Global Keyboard Avoidance
+  // Initial Data Loading, Real-time Storage Listener & Global Keyboard Avoidance
   useEffect(() => {
-    const loadedVideos = loadVideos();
-    const loadedArtists = loadArtists();
-    const loadedFields = loadCustomFields();
+    const syncAllData = () => {
+      setVideos(loadVideos());
+      setArtists(loadArtists());
+      setFieldDefinitions(loadCustomFields());
+      setArtistFieldDefinitions(getStoredArtistFields());
+    };
 
-    setVideos(loadedVideos);
-    setArtists(loadedArtists);
-    setFieldDefinitions(loadedFields);
+    syncAllData();
     setIsLoading(false);
+
+    // Real-time synchronization listener across any update/delete/create
+    const unsubscribe = subscribeStorage(syncAllData);
 
     // Keyboard Avoidance: Auto-scroll focused input/textarea into visible viewport
     const handleFocusIn = (e: FocusEvent) => {
@@ -124,13 +131,17 @@ export default function App() {
     };
 
     window.addEventListener('focusin', handleFocusIn);
-    return () => window.removeEventListener('focusin', handleFocusIn);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('focusin', handleFocusIn);
+    };
   }, []);
 
   const refreshAllData = () => {
     setVideos(loadVideos());
     setArtists(loadArtists());
     setFieldDefinitions(loadCustomFields());
+    setArtistFieldDefinitions(getStoredArtistFields());
     showToast('Data berhasil disegarkan');
   };
 
@@ -453,6 +464,7 @@ export default function App() {
                   videos={videos}
                   artists={artists}
                   fieldDefinitions={fieldDefinitions}
+                  artistFieldDefinitions={artistFieldDefinitions}
                   onSelectVideo={handleOpenVideoDetail}
                   onSelectArtist={handleSelectArtist}
                   initialFieldId={videoRankInitialFilter?.fieldId}
@@ -466,6 +478,7 @@ export default function App() {
                   artists={artists}
                   videos={videos}
                   fieldDefinitions={fieldDefinitions}
+                  artistFieldDefinitions={artistFieldDefinitions}
                   onSelectArtist={handleSelectArtist}
                   initialFieldId={artistRankInitialFilter?.fieldId}
                   initialOption={artistRankInitialFilter?.option}

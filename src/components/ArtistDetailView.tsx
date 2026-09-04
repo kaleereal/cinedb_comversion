@@ -33,7 +33,9 @@ import {
   recalculateAllVideoPivots,
   getStoredGalleryNotes,
   saveGalleryNotes,
+  getStoredArtistFields,
 } from '../utils/storage';
+import { formatNumberWithAffixes } from '../utils/dynamicFilterSchema';
 import { GalleryNoteModal } from './GalleryNoteModal';
 import { GalleryNote } from '../types';
 import { RatingBadge } from './RatingBadge';
@@ -1220,21 +1222,41 @@ export const ArtistDetailView: React.FC<ArtistDetailViewProps> = ({
             </div>
           )}
 
-          {/* Custom Text Fields */}
-          {artist.textFields && Object.keys(artist.textFields).length > 0 && (
+          {/* Custom Text & Number Fields */}
+          {((artist.textFields && Object.keys(artist.textFields).length > 0) ||
+            (artist.numberFields && Object.keys(artist.numberFields).length > 0)) && (
             <div className="p-3 rounded-md bg-[#181B22] border border-[#30363D] space-y-2">
               <h3 className="text-[10px] font-mono uppercase tracking-wider text-[#8B949E]">
                 Informasi Tambahan
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 font-mono">
-                {Object.entries(artist.textFields).map(([k, v]) => (
-                  <div key={k} className="p-2 rounded bg-[#111319] border border-[#30363D]">
-                    <span className="text-[9px] text-[#8B949E] block uppercase">
-                      {k}
-                    </span>
-                    <span className="text-xs text-[#F0F6FC] font-semibold">{v}</span>
-                  </div>
-                ))}
+                {artist.textFields &&
+                  Object.entries(artist.textFields).map(([k, v]) => (
+                    <div key={k} className="p-2 rounded bg-[#111319] border border-[#30363D]">
+                      <span className="text-[9px] text-[#8B949E] block uppercase">
+                        {k}
+                      </span>
+                      <span className="text-xs text-[#F0F6FC] font-semibold">{v}</span>
+                    </div>
+                  ))}
+                {artist.numberFields &&
+                  Object.entries(artist.numberFields).map(([k, v]) => {
+                    const storedFields = getStoredArtistFields();
+                    const matchedDef = storedFields.find(
+                      (f) =>
+                        f.label.trim().toLowerCase() === k.trim().toLowerCase() ||
+                        f.key.trim().toLowerCase() === k.trim().toLowerCase()
+                    );
+                    const formatted = formatNumberWithAffixes(Number(v), matchedDef?.prefix, matchedDef?.suffix);
+                    return (
+                      <div key={k} className="p-2 rounded bg-[#111319] border border-[#30363D]">
+                        <span className="text-[9px] text-[#8B949E] block uppercase">
+                          {k}
+                        </span>
+                        <span className="text-xs text-[#F0F6FC] font-semibold text-[#E5A93C]">{formatted}</span>
+                      </div>
+                    );
+                  })}
               </div>
             </div>
           )}

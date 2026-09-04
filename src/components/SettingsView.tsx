@@ -63,6 +63,7 @@ import {
   getStoredArtistFields,
   saveArtistFields,
 } from '../utils/storage';
+import { formatNumberWithAffixes } from '../utils/dynamicFilterSchema';
 import { PWAInstallButton } from './PWAInstallButton';
 import { ConfirmModal } from './ConfirmModal';
 
@@ -89,6 +90,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [label, setLabel] = useState('');
   const [description, setDescription] = useState('');
   const [fieldType, setFieldType] = useState<FieldType>('custom_text');
+  const [fieldPrefix, setFieldPrefix] = useState('');
+  const [fieldSuffix, setFieldSuffix] = useState('');
   const [optionsText, setOptionsText] = useState('');
   const [maxEntries, setMaxEntries] = useState<number>(10);
   // Option items with descriptions for multi_choice & single_choice
@@ -116,6 +119,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [artistFieldLabel, setArtistFieldLabel] = useState('');
   const [artistFieldDesc, setArtistFieldDesc] = useState('');
   const [artistFieldType, setArtistFieldType] = useState<FieldType>('custom_text');
+  const [artistFieldPrefix, setArtistFieldPrefix] = useState('');
+  const [artistFieldSuffix, setArtistFieldSuffix] = useState('');
+
+  // Drag-and-drop state for Form Layout Builders
+  const [draggedArtistIdx, setDraggedArtistIdx] = useState<number | null>(null);
+  const [dragOverArtistIdx, setDragOverArtistIdx] = useState<number | null>(null);
+  const [draggedVideoIdx, setDraggedVideoIdx] = useState<number | null>(null);
+  const [dragOverVideoIdx, setDragOverVideoIdx] = useState<number | null>(null);
 
   // Role Weights State
   const [roleWeights, setRoleWeights] = useState<RoleWeight[]>([]);
@@ -460,6 +471,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setLabel('');
     setDescription('');
     setFieldType('custom_text');
+    setFieldPrefix('');
+    setFieldSuffix('');
     setOptionsText('');
     setMaxEntries(10);
     setOptionItems([
@@ -477,6 +490,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setLabel(field.label);
     setDescription(field.description);
     setFieldType(field.type);
+    setFieldPrefix(field.prefix || '');
+    setFieldSuffix(field.suffix || '');
     setOptionsText(field.options?.join(', ') || '');
     setMaxEntries(field.maxEntries || 10);
     const loadedOpts = (field.options || []).map((opt, idx) => ({
@@ -524,6 +539,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             options: isChoiceType ? (finalOptions.length > 0 ? finalOptions : f.options) : f.options,
             optionDescriptions: isChoiceType ? finalOptionDescriptions : f.optionDescriptions,
             maxEntries,
+            prefix: fieldType === 'number' ? fieldPrefix.trim() || undefined : undefined,
+            suffix: fieldType === 'number' ? fieldSuffix.trim() || undefined : undefined,
           };
         }
         return f;
@@ -541,6 +558,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         options: isChoiceType ? (finalOptions.length > 0 ? finalOptions : ['Pilihan 1', 'Pilihan 2']) : undefined,
         optionDescriptions: isChoiceType ? finalOptionDescriptions : undefined,
         maxEntries,
+        prefix: fieldType === 'number' ? fieldPrefix.trim() || undefined : undefined,
+        suffix: fieldType === 'number' ? fieldSuffix.trim() || undefined : undefined,
       };
       onUpdateFields([...fieldDefinitions, newField]);
     }
@@ -1000,35 +1019,76 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <div className="p-2.5 pt-1.5 border-t border-[#30363D] space-y-2 animate-in fade-in">
             {/* List View with drag/reorder handle, Edit, Delete */}
             <div className="space-y-1.5">
-              {fieldDefinitions.map((field, idx) => (
-                <div
-                  key={field.id}
-                  className="flex items-center gap-2 p-2 rounded bg-[#111319] border border-[#30363D] hover:border-[#8B949E]/40 transition text-xs"
-                >
-                  {/* Drag/Reorder buttons */}
-                  <div className="flex flex-col items-center text-[#8B949E] shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => handleMove(idx, 'up')}
-                      disabled={idx === 0}
-                      className="p-0.5 rounded hover:bg-[#212631] disabled:opacity-20 transition cursor-pointer"
-                      title="Pindah ke Atas"
-                    >
-                      <ArrowUp className="w-2.5 h-2.5" />
-                    </button>
-                    <div className="flex items-center justify-center text-[#484F58]">
-                      <GripVertical className="w-3 h-3" />
+              {fieldDefinitions.map((field, idx) => {
+                const isDragging = draggedVideoIdx === idx;
+                const isOver = dragOverVideoIdx === idx;
+
+                return (
+                  <div
+                    key={field.id}
+                    draggable
+                    onDragStart={(e) => {
+                      setDraggedVideoIdx(idx);
+                      e.dataTransfer.effectAllowed = 'move';
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      if (dragOverVideoIdx !== idx) setDragOverVideoIdx(idx);
+                    }}
+                    onDragLeave={() => {
+                      if (dragOverVideoIdx === idx) setDragOverVideoIdx(null);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (draggedVideoIdx !== null && draggedVideoIdx !== idx) {
+                        const copy = [...fieldDefinitions];
+                        const [moved] = copy.splice(draggedVideoIdx, 1);
+                        copy.splice(idx, 0, moved);
+                        const reordered = copy.map((item, i) => ({ ...item, order: i + 1 }));
+                        onUpdateFields(reordered);
+                      }
+                      setDraggedVideoIdx(null);
+                      setDragOverVideoIdx(null);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedVideoIdx(null);
+                      setDragOverVideoIdx(null);
+                    }}
+                    className={`flex items-center gap-2 p-2 rounded bg-[#111319] border transition text-xs select-none ${
+                      isDragging
+                        ? 'opacity-40 border-dashed border-[#E5A93C] scale-[0.98]'
+                        : isOver
+                        ? 'border-t-2 border-t-[#E5A93C] bg-[#181B22] border-[#30363D]'
+                        : 'border-[#30363D] hover:border-[#8B949E]/40'
+                    }`}
+                  >
+                    {/* Drag/Reorder buttons */}
+                    <div className="flex flex-col items-center text-[#8B949E] shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleMove(idx, 'up')}
+                        disabled={idx === 0}
+                        className="p-0.5 rounded hover:bg-[#212631] disabled:opacity-20 transition cursor-pointer"
+                        title="Pindah ke Atas"
+                      >
+                        <ArrowUp className="w-2.5 h-2.5" />
+                      </button>
+                      <div
+                        className="flex items-center justify-center text-[#484F58] hover:text-[#E5A93C] cursor-grab active:cursor-grabbing p-0.5"
+                        title="Tarik & Lepas (Drag and drop) untuk ubah urutan"
+                      >
+                        <GripVertical className="w-3.5 h-3.5" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleMove(idx, 'down')}
+                        disabled={idx === fieldDefinitions.length - 1}
+                        className="p-0.5 rounded hover:bg-[#212631] disabled:opacity-20 transition cursor-pointer"
+                        title="Pindah ke Bawah"
+                      >
+                        <ArrowDown className="w-2.5 h-2.5" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleMove(idx, 'down')}
-                      disabled={idx === fieldDefinitions.length - 1}
-                      className="p-0.5 rounded hover:bg-[#212631] disabled:opacity-20 transition cursor-pointer"
-                      title="Pindah ke Bawah"
-                    >
-                      <ArrowDown className="w-2.5 h-2.5" />
-                    </button>
-                  </div>
 
                   {/* Field Label & Description */}
                   <div className="flex-1 min-w-0">
@@ -1086,13 +1146,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     )}
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
+          </div>
 
-            {/* Button to Add New Field */}
-            <button
-              type="button"
-              onClick={openAddModal}
+          {/* Button to Add New Field */}
+          <button
+            type="button"
+            onClick={openAddModal}
               className="w-full py-1.5 rounded bg-[#212631] hover:bg-[#30363D] text-[#E5A93C] border border-[#30363D] text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -1128,96 +1189,188 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
         {isArtistFieldsOpen && (
           <div className="p-2.5 pt-1.5 border-t border-[#30363D] space-y-2 animate-in fade-in">
-            <p className="text-[10px] text-[#8B949E]">
-              Kustomisasi struktur form entri artis. Data field yang dihapus tidak hilang permanen.
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] text-[#8B949E]">
+                <strong className="text-[#F0F6FC]">Form Layout Builder:</strong> Seluruh form fields (system fields &amp; custom fields) terdaftar di bawah. Atur urutan field dengan drag-and-drop atau tombol panah untuk menentukan tata letak Halaman Buat/Edit Entri Artis.
+              </p>
+            </div>
 
-            {/* List View Field Artis */}
+            {/* List View Field Artis (Form Layout Builder with Drag-and-Drop) */}
             <div className="space-y-1.5">
-              {artistFields.map((field, idx) => (
-                <div
-                  key={field.id}
-                  className="flex items-center gap-2 p-2 rounded bg-[#111319] border border-[#30363D] hover:border-[#8B949E]/40 transition text-xs"
-                >
-                  {/* Drag/Reorder buttons */}
-                  <div className="flex flex-col items-center text-[#8B949E] shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (idx === 0) return;
-                        const copy = [...artistFields];
-                        const temp = copy[idx];
-                        copy[idx] = copy[idx - 1];
-                        copy[idx - 1] = temp;
-                        const reordered = copy.map((it, i) => ({ ...it, order: i + 1 }));
-                        setArtistFields(reordered);
-                        saveArtistFields(reordered);
-                      }}
-                      disabled={idx === 0}
-                      className="p-0.5 rounded hover:bg-[#212631] disabled:opacity-20 transition cursor-pointer"
-                      title="Pindah ke Atas"
-                    >
-                      <ArrowUp className="w-2.5 h-2.5" />
-                    </button>
-                    <GripVertical className="w-3 h-3 text-[#484F58]" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (idx === artistFields.length - 1) return;
-                        const copy = [...artistFields];
-                        const temp = copy[idx];
-                        copy[idx] = copy[idx + 1];
-                        copy[idx + 1] = temp;
-                        const reordered = copy.map((it, i) => ({ ...it, order: i + 1 }));
-                        setArtistFields(reordered);
-                        saveArtistFields(reordered);
-                      }}
-                      disabled={idx === artistFields.length - 1}
-                      className="p-0.5 rounded hover:bg-[#212631] disabled:opacity-20 transition cursor-pointer"
-                      title="Pindah ke Bawah"
-                    >
-                      <ArrowDown className="w-2.5 h-2.5" />
-                    </button>
-                  </div>
+              {artistFields.map((field, idx) => {
+                const isDragging = draggedArtistIdx === idx;
+                const isOver = dragOverArtistIdx === idx;
+                const isPeranUtama =
+                  field.id === 'art_field_peran_utama' || field.key === 'Peran Utama';
 
-                  {/* Field Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <h4 className="text-xs font-bold text-[#F0F6FC] truncate">{field.label}</h4>
-                      {field.isSystem && (
-                        <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-[#181B22] text-[#E5A93C] border border-[#30363D]">
-                          WAJIB / SISTEM
+                return (
+                  <div
+                    key={field.id}
+                    draggable
+                    onDragStart={(e) => {
+                      setDraggedArtistIdx(idx);
+                      e.dataTransfer.effectAllowed = 'move';
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      if (dragOverArtistIdx !== idx) setDragOverArtistIdx(idx);
+                    }}
+                    onDragLeave={() => {
+                      if (dragOverArtistIdx === idx) setDragOverArtistIdx(null);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (draggedArtistIdx !== null && draggedArtistIdx !== idx) {
+                        const copy = [...artistFields];
+                        const [moved] = copy.splice(draggedArtistIdx, 1);
+                        copy.splice(idx, 0, moved);
+                        const reordered = copy.map((it, i) => ({ ...it, order: i + 1 }));
+                        setArtistFields(reordered);
+                        saveArtistFields(reordered);
+                      }
+                      setDraggedArtistIdx(null);
+                      setDragOverArtistIdx(null);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedArtistIdx(null);
+                      setDragOverArtistIdx(null);
+                    }}
+                    className={`flex items-center gap-2 p-2 rounded bg-[#111319] border transition text-xs select-none ${
+                      isDragging
+                        ? 'opacity-40 border-dashed border-[#E5A93C] scale-[0.98]'
+                        : isOver
+                        ? 'border-t-2 border-t-[#E5A93C] bg-[#181B22] border-[#30363D]'
+                        : 'border-[#30363D] hover:border-[#8B949E]/40'
+                    }`}
+                  >
+                    {/* Drag/Reorder buttons */}
+                    <div className="flex flex-col items-center text-[#8B949E] shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (idx === 0) return;
+                          const copy = [...artistFields];
+                          const temp = copy[idx];
+                          copy[idx] = copy[idx - 1];
+                          copy[idx - 1] = temp;
+                          const reordered = copy.map((it, i) => ({ ...it, order: i + 1 }));
+                          setArtistFields(reordered);
+                          saveArtistFields(reordered);
+                        }}
+                        disabled={idx === 0}
+                        className="p-0.5 rounded hover:bg-[#212631] disabled:opacity-20 transition cursor-pointer"
+                        title="Pindah ke Atas"
+                      >
+                        <ArrowUp className="w-2.5 h-2.5" />
+                      </button>
+                      <div
+                        className="flex items-center justify-center text-[#484F58] hover:text-[#E5A93C] cursor-grab active:cursor-grabbing p-0.5"
+                        title="Tarik & Lepas (Drag and drop) untuk ubah urutan form layout"
+                      >
+                        <GripVertical className="w-3.5 h-3.5" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (idx === artistFields.length - 1) return;
+                          const copy = [...artistFields];
+                          const temp = copy[idx];
+                          copy[idx] = copy[idx + 1];
+                          copy[idx + 1] = temp;
+                          const reordered = copy.map((it, i) => ({ ...it, order: i + 1 }));
+                          setArtistFields(reordered);
+                          saveArtistFields(reordered);
+                        }}
+                        disabled={idx === artistFields.length - 1}
+                        className="p-0.5 rounded hover:bg-[#212631] disabled:opacity-20 transition cursor-pointer"
+                        title="Pindah ke Bawah"
+                      >
+                        <ArrowDown className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+
+                    {/* Field Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-mono text-[#8B949E] bg-[#181B22] px-1 py-0.2 rounded border border-[#30363D]">
+                          #{idx + 1}
                         </span>
+                        <h4 className="text-xs font-bold text-[#F0F6FC] truncate">{field.label}</h4>
+                        {isPeranUtama ? (
+                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-[#212631] text-[#E5A93C] border border-[#E5A93C]/40">
+                            SYSTEM RESERVED
+                          </span>
+                        ) : field.isSystem ? (
+                          <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-[#181B22] text-[#8B949E] border border-[#30363D]">
+                            SISTEM
+                          </span>
+                        ) : null}
+                        {field.type === 'number' && (
+                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#212631] text-[#58A6FF] border border-[#30363D] flex items-center gap-1">
+                            <span>Angka</span>
+                            {(field.prefix || field.suffix) && (
+                              <span className="text-[#E5A93C]">
+                                ({formatNumberWithAffixes('100', field.prefix, field.suffix)})
+                              </span>
+                            )}
+                          </span>
+                        )}
+                        {field.type === 'text_dynamic_filter' && (
+                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#212631] text-[#E5A93C] border border-[#30363D]">
+                            Dynamic Filter
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-[#8B949E] mt-0.5">{field.description}</p>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {/* Metadata Edit Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingArtistField(field);
+                          setArtistFieldLabel(field.label);
+                          setArtistFieldDesc(field.description || '');
+                          setArtistFieldType(field.type);
+                          setArtistFieldPrefix(field.prefix || '');
+                          setArtistFieldSuffix(field.suffix || '');
+                          setIsArtistFieldModalOpen(true);
+                        }}
+                        className="p-1 rounded bg-[#212631] hover:bg-[#30363D] text-[#8B949E] hover:text-[#F0F6FC] transition cursor-pointer"
+                        title="Edit Metadata Field (Label & Deskripsi)"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+
+                      {/* Delete button (Non-system fields only; System fields are strictly non-deletable) */}
+                      {!field.isSystem && !isPeranUtama && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setConfirmModalData({
+                              title: 'Sembunyikan / Hapus Field Artis',
+                              message: `Sembunyikan field "${field.label}" dari form artis? Data historis yang tersimpan tidak akan hilang secara permanen.`,
+                              confirmText: 'Sembunyikan',
+                              isDanger: true,
+                              onConfirm: () => {
+                                const updated = artistFields.filter((f) => f.id !== field.id);
+                                setArtistFields(updated);
+                                saveArtistFields(updated);
+                              },
+                            });
+                          }}
+                          className="p-1 rounded bg-[#212631] hover:bg-rose-950/60 text-[#8B949E] hover:text-rose-400 transition cursor-pointer"
+                          title="Hapus / Sembunyikan Field"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
                       )}
                     </div>
-                    <p className="text-[10px] text-[#8B949E] mt-0.5">{field.description}</p>
                   </div>
-
-                  {/* Delete button (Non-system fields only) */}
-                  {!field.isSystem && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setConfirmModalData({
-                          title: 'Sembunyikan / Hapus Field Artis',
-                          message: `Sembunyikan field "${field.label}" dari form artis? Data historis yang tersimpan tidak akan hilang secara permanen.`,
-                          confirmText: 'Sembunyikan',
-                          isDanger: true,
-                          onConfirm: () => {
-                            const updated = artistFields.filter((f) => f.id !== field.id);
-                            setArtistFields(updated);
-                            saveArtistFields(updated);
-                          },
-                        });
-                      }}
-                      className="p-1 rounded bg-[#212631] hover:bg-rose-950/60 text-[#8B949E] hover:text-rose-400 transition cursor-pointer"
-                      title="Hapus / Sembunyikan Field"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Button Tambah Field Artis Baru */}
@@ -1228,6 +1381,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 setArtistFieldLabel('');
                 setArtistFieldDesc('');
                 setArtistFieldType('custom_text');
+                setArtistFieldPrefix('');
+                setArtistFieldSuffix('');
                 setIsArtistFieldModalOpen(true);
               }}
               className="w-full py-1.5 rounded bg-[#212631] hover:bg-[#30363D] text-[#E5A93C] border border-[#30363D] text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
@@ -1692,7 +1847,61 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     <option value="custom_text">Text Field Biasa</option>
                     <option value="multi_choice">MultiChoice (Bisa banyak tag)</option>
                     <option value="single_choice">SingleChoice (Pilihan tunggal)</option>
+                    <option value="number">Number (Angka - Support Dynamic Filtering)</option>
                   </select>
+                </div>
+              )}
+
+              {/* Input Affixes for Field Number */}
+              {(fieldType === 'number' || editingField?.type === 'number') && (
+                <div className="p-2.5 rounded bg-[#111319] border border-[#30363D] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-[#F0F6FC] flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#E5A93C]" />
+                      <span>Input Affixes (Satuan Angka)</span>
+                    </label>
+                    <span className="text-[9px] text-[#8B949E] italic">Opsional</span>
+                  </div>
+                  <p className="text-[10px] text-[#8B949E] leading-relaxed">
+                    Tentukan format kolom Prefix (satuan di depan) dan Suffix (satuan di belakang) untuk mendefinisikan format tampilan unit/satuan angka pada UI.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#8B949E]">
+                        Prefix (Satuan di Depan)
+                      </label>
+                      <input
+                        type="text"
+                        value={fieldPrefix}
+                        onChange={(e) => setFieldPrefix(e.target.value)}
+                        placeholder="Contoh: Rp, $, #"
+                        className="w-full py-1.5 px-2.5 rounded bg-[#181B22] border border-[#30363D] text-[#F0F6FC] text-xs font-mono focus:outline-none focus:border-[#E5A93C]"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#8B949E]">
+                        Suffix (Satuan di Belakang)
+                      </label>
+                      <input
+                        type="text"
+                        value={fieldSuffix}
+                        onChange={(e) => setFieldSuffix(e.target.value)}
+                        placeholder="Contoh: cm, kg, th, thn"
+                        className="w-full py-1.5 px-2.5 rounded bg-[#181B22] border border-[#30363D] text-[#F0F6FC] text-xs font-mono focus:outline-none focus:border-[#E5A93C]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Live Preview */}
+                  {(fieldPrefix.trim() || fieldSuffix.trim()) && (
+                    <div className="flex items-center justify-between p-1.5 px-2 rounded bg-[#181B22] border border-[#30363D]/60 text-[10px]">
+                      <span className="text-[#8B949E]">Pratinjau Tampilan Unit:</span>
+                      <span className="font-mono font-bold text-[#E5A93C]">
+                        {formatNumberWithAffixes(100, fieldPrefix, fieldSuffix)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1926,7 +2135,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <div className="fixed inset-0 z-60 flex flex-col justify-end sm:justify-center bg-black/80 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in">
           <div className="w-full max-w-md mx-auto bg-[#181B22] border border-[#30363D] rounded-t-md sm:rounded-md shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom">
             <div className="flex items-center justify-between p-3 border-b border-[#30363D] bg-[#111319]">
-              <h3 className="text-xs font-bold text-[#F0F6FC]">Tambah Field Form Artis Baru</h3>
+              <h3 className="text-xs font-bold text-[#F0F6FC]">
+                {editingArtistField ? 'Ubah Field Form Artis' : 'Tambah Field Form Artis Baru'}
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsArtistFieldModalOpen(false)}
@@ -1942,24 +2153,47 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 if (!artistFieldLabel.trim()) return;
 
                 const newF: CustomFieldDefinition = {
-                  id: `art_field_${Date.now()}`,
-                  key: artistFieldLabel.trim().toLowerCase().replace(/\s+/g, '_'),
+                  id: editingArtistField ? editingArtistField.id : `art_field_${Date.now()}`,
+                  key: editingArtistField
+                    ? editingArtistField.key
+                    : artistFieldLabel.trim().toLowerCase().replace(/\s+/g, '_'),
                   label: artistFieldLabel.trim(),
                   description: artistFieldDesc.trim() || 'Field kustom entri artis',
-                  type: artistFieldType,
-                  order: artistFields.length + 1,
-                  isSystem: false,
+                  type: editingArtistField?.isSystem ? editingArtistField.type : artistFieldType,
+                  order: editingArtistField ? editingArtistField.order : artistFields.length + 1,
+                  isSystem: editingArtistField ? Boolean(editingArtistField.isSystem) : false,
+                  prefix: (editingArtistField?.isSystem ? editingArtistField.type : artistFieldType) === 'number'
+                    ? artistFieldPrefix.trim() || undefined
+                    : undefined,
+                  suffix: (editingArtistField?.isSystem ? editingArtistField.type : artistFieldType) === 'number'
+                    ? artistFieldSuffix.trim() || undefined
+                    : undefined,
                 };
 
-                const updated = [...artistFields, newF];
+                const updated = editingArtistField
+                  ? artistFields.map((f) => (f.id === editingArtistField.id ? newF : f))
+                  : [...artistFields, newF];
                 setArtistFields(updated);
                 saveArtistFields(updated);
                 setIsArtistFieldModalOpen(false);
               }}
               className="p-3 space-y-3"
             >
+              {/* Informational banner for System Reserved Field */}
+              {editingArtistField?.isSystem && (
+                <div className="p-2 rounded bg-[#212631] border border-[#E5A93C]/40 text-[#E5A93C] text-[10px] space-y-0.5">
+                  <div className="font-bold flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-[#E5A93C]" />
+                    <span>System Reserved Field (Metadata Editing)</span>
+                  </div>
+                  <p className="text-[#8B949E] leading-relaxed">
+                    Field ini bersifat non-deletable (wajib sistem). Anda dapat mengkustomisasi Label dan Deskripsi tampilan sesuai kebutuhan tanpa merusak integritas data sistem.
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-[#8B949E]">Nama Field Artis</label>
+                <label className="text-[10px] font-bold text-[#8B949E]">Nama Field Artis (Label)</label>
                 <input
                   type="text"
                   required
@@ -1982,18 +2216,82 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-[#8B949E]">Tipe Field</label>
-                <select
-                  value={artistFieldType}
-                  onChange={(e) => setArtistFieldType(e.target.value as FieldType)}
-                  className="w-full py-1.5 px-2.5 rounded bg-[#111319] border border-[#30363D] text-[#F0F6FC] text-xs focus:outline-none focus:border-[#E5A93C]"
-                >
-                  <option value="custom_text">Text (Teks Kustom Biasa)</option>
-                  <option value="text_dynamic_filter">Field Text (Support Dynamic Filtering)</option>
-                  <option value="number">Number (Angka - Support Dynamic Filtering)</option>
-                  <option value="button_link">Button/Link (Tombol Tautan)</option>
-                </select>
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-[#8B949E]">Tipe Field</label>
+                  {editingArtistField?.isSystem && (
+                    <span className="text-[9px] font-mono text-[#E5A93C]">Tipe Sistem Dikunci</span>
+                  )}
+                </div>
+                {editingArtistField?.isSystem ? (
+                  <div className="w-full py-1.5 px-2.5 rounded bg-[#181B22] border border-[#30363D] text-[#8B949E] text-xs font-mono select-none">
+                    {editingArtistField.type} (Bawaan Sistem)
+                  </div>
+                ) : (
+                  <select
+                    value={artistFieldType}
+                    onChange={(e) => setArtistFieldType(e.target.value as FieldType)}
+                    className="w-full py-1.5 px-2.5 rounded bg-[#111319] border border-[#30363D] text-[#F0F6FC] text-xs focus:outline-none focus:border-[#E5A93C]"
+                  >
+                    <option value="custom_text">Text (Teks Kustom Biasa)</option>
+                    <option value="text_dynamic_filter">Field Text (Support Dynamic Filtering)</option>
+                    <option value="number">Number (Angka - Support Dynamic Filtering)</option>
+                    <option value="button_link">Button/Link (Tombol Tautan)</option>
+                  </select>
+                )}
               </div>
+
+              {/* Input Affixes for Field Number */}
+              {artistFieldType === 'number' && (
+                <div className="p-2.5 rounded bg-[#111319] border border-[#30363D] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-[#F0F6FC] flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#E5A93C]" />
+                      <span>Input Affixes (Satuan Angka)</span>
+                    </label>
+                    <span className="text-[9px] text-[#8B949E] italic">Opsional</span>
+                  </div>
+                  <p className="text-[10px] text-[#8B949E] leading-relaxed">
+                    Tentukan format kolom Prefix (satuan di depan) dan Suffix (satuan di belakang) untuk mendefinisikan format tampilan unit/satuan angka pada UI.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#8B949E]">
+                        Prefix (Satuan di Depan)
+                      </label>
+                      <input
+                        type="text"
+                        value={artistFieldPrefix}
+                        onChange={(e) => setArtistFieldPrefix(e.target.value)}
+                        placeholder="Contoh: Rp, $, #"
+                        className="w-full py-1.5 px-2.5 rounded bg-[#181B22] border border-[#30363D] text-[#F0F6FC] text-xs font-mono focus:outline-none focus:border-[#E5A93C]"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#8B949E]">
+                        Suffix (Satuan di Belakang)
+                      </label>
+                      <input
+                        type="text"
+                        value={artistFieldSuffix}
+                        onChange={(e) => setArtistFieldSuffix(e.target.value)}
+                        placeholder="Contoh: cm, kg, th, thn"
+                        className="w-full py-1.5 px-2.5 rounded bg-[#181B22] border border-[#30363D] text-[#F0F6FC] text-xs font-mono focus:outline-none focus:border-[#E5A93C]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Live Preview of formatted number */}
+                  {(artistFieldPrefix.trim() || artistFieldSuffix.trim()) && (
+                    <div className="flex items-center justify-between p-1.5 px-2 rounded bg-[#181B22] border border-[#30363D]/60 text-[10px]">
+                      <span className="text-[#8B949E]">Pratinjau Tampilan Unit:</span>
+                      <span className="font-mono font-bold text-[#E5A93C]">
+                        {formatNumberWithAffixes(165, artistFieldPrefix, artistFieldSuffix)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <button
                 type="submit"
